@@ -1,108 +1,68 @@
-# Simulador de Hidrômetro
+# Simulador de Hidrômetro Analógico
 
-Este projeto implementa um simulador de hidrômetro digital em Java, baseado no diagrama UML fornecido.
+Aplicação OO em Java que simula um hidrômetro residencial, exibindo vazão, volume e pressão em tempo real. Projeto acadêmico da disciplina Padrões de Projeto — IFPB.
 
 ## Funcionalidades
 
-- ✅ Simulação de medição de vazão, volume e pressão
-- ✅ Geração de imagens em JPEG com controle de qualidade
-- ✅ Simulação de falta de água e variações no fluxo
-- ✅ Configuração via arquivo de propriedades
-- ✅ Interface de linha de comando
-- ✅ Logs detalhados da simulação
+- Simulação de vazão, volume e pressão da água.
+- Interface gráfica amigável com ponteiros e visor digital.
+- Status operacional em tempo real (normal, sem fluxo, pressão baixa).
+- Parâmetros configuráveis via arquivo `config.properties`.
+- Geração de imagens do estado do hidrômetro.
 
-## Estrutura do Projeto
+## Tecnologias Utilizadas
 
-\`\`\`
-src/main/java/hidrometro/
-├── Main.java              # Classe principal
-├── Controladora.java      # Orquestra a simulação
-├── Hidrometro.java        # Representa o hidrômetro
-├── Entrada.java           # Entrada de água
-├── Saida.java            # Saída de água
-├── Medidor.java          # Componente de medição
-├── Display.java          # Exibição de informações
-├── Configuracao.java     # Gerenciamento de configurações
-├── GeradorImagem.java    # Geração de imagens JPEG/PNG
-└── DadosHidrometro.java  # Encapsulamento de dados
-\`\`\`
+- **Java** - Linguagem principal
+- **Swing** - Interface gráfica
+- **Java 2D** - Desenho e manipulação de imagens
+- **PlantUML** - Documentação e diagrama UML
+- **Arquivos .properties** - Configuração externa do simulador
 
-## Como Executar
+## ▶️Como Executar 
 
-### Pré-requisitos
-- Java 11 ou superior
-- Maven 3.6 ou superior
+1. **Clone o repositório**  
+   `git clone <url-do-repositorio>`
 
-### Compilação
-\`\`\`bash
-mvn clean compile
-\`\`\`
+2. **Compile o projeto**  
+   No terminal, dentro da pasta do projeto:
+   ```
+   javac -d bin src/main/java/hidrometro/*.java
+   ```
 
-### Execução
-\`\`\`bash
-# Com arquivo de configuração padrão
-mvn exec:java
+3. **Execute o simulador**  
+   ```
+   java -cp bin hidrometro.Main
+   ```
 
-# Com arquivo de configuração específico
-mvn exec:java -Dexec.args="minha-config.properties"
-\`\`\`
+## ⚙️Configuração 
 
-### Execução Direta
-\`\`\`bash
-# Compilar
-javac -d target/classes src/main/java/hidrometro/*.java
+Edite o arquivo `config.properties` para ajustar os parâmetros necessários.
 
-# Executar
-java -cp target/classes hidrometro.Main
-\`\`\`
+## Documentação UML
 
-## Configuração
+O diagrama UML das classes principais está disponível no arquivo `hidrometro-simulator.puml`.
 
-O arquivo `config.properties` permite configurar:
 
-- `vazao.entrada`: Vazão de entrada em L/min (padrão: 10.0)
-- `vazao.saida`: Vazão de saída em L/min (padrão: 9.5)
-- `diametro.entrada`: Diâmetro da entrada em mm (padrão: 25.0)
-- `diametro.saida`: Diâmetro da saída em mm (padrão: 20.0)
-- `chance.falta.agua`: Chance de falta de água 0-100% (padrão: 5)
-- `tempo.simulacao`: Tempo de simulação em segundos (padrão: 30)
+## 🗂️Estrutura do Projeto
 
-## Saída
-
-O simulador gera:
-- **Logs no console**: Medições em tempo real
-- **Imagens JPEG**: Mostradores do hidrômetro salvos como `hidrometro_[timestamp].jpg`
-- **Relatório final**: Volume total medido ao final da simulação
-
-## Exemplo de Saída
-
-\`\`\`
-=== Simulador de Hidrômetro ===
-Configuração carregada com sucesso de: config.properties
-Simulação iniciada
-Hidrômetro iniciado
-Executando simulação por 30 segundos...
-Medição: 10.15 L/min | Pressão: 0.05 bar
-Imagem salva: hidrometro_1703123456789.jpg
-⚠️ Simulando falta de água...
-💧 Água retornou
-Medição: 9.87 L/min | Pressão: 0.03 bar
-Hidrômetro parado
-Volume total medido: 4.523 litros
-Simulação concluída
-\`\`\`
-
-## Arquitetura
-
-O projeto segue o padrão de arquitetura definido no diagrama UML:
-- **Controladora**: Orquestra toda a simulação
-- **Hidrometro**: Componente principal com entrada, saída, medidor e display
-- **GeradorImagem**: Cria imagens JPEG com controle de qualidade
-- **Configuracao**: Gerencia parâmetros via arquivo de propriedades
-
-## Recursos Avançados
-
-- **Simulação realística**: Variações de fluxo, presença de ar, falta de água
-- **Geração de imagens**: Mostradores visuais salvos em JPEG com qualidade configurável
-- **Multithreading**: Simulação de eventos assíncronos (retorno da água)
-- **Configuração flexível**: Parâmetros ajustáveis via arquivo de propriedades
+```
+hidrometro-uml/
+├── src/
+│   └── main/
+│       ├── java/
+│       │   └── hidrometro/
+│       │       ├── Configuracao.java
+│       │       ├── ConfiguracaoDTO.java
+│       │       ├── Controladora.java
+│       │       ├── DadosHidrometro.java
+│       │       ├── Display.java
+│       │       ├── Entrada.java
+│       │       ├── GeradorImagem.java
+│       │       ├── Hidrometro.java
+│       │       ├── Main.java
+│       │       ├── Medidor.java
+│       │       ├── Saida.java
+│       │       └── TipoFluido.java
+│       └── resources/
+│           ├── config.properties
+│           └── images/

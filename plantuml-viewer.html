@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlantUML - Simulador de Hidrômetro</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        
+        .code-container {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .code-header {
+            background: #3498db;
+            color: white;
+            padding: 10px 15px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 10px 10px 0 0;
+            font-weight: bold;
+        }
+        
+        pre {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            margin: 0;
+        }
+        
+        .instructions {
+            background: #e8f5e8;
+            border-left: 5px solid #27ae60;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 10px 10px 0;
+        }
+        
+        .instructions h3 {
+            color: #27ae60;
+            margin-top: 0;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .feature {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .feature h4 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 PlantUML - Simulador de Hidrômetro</h1>
+        
+        <div class="instructions">
+            <h3>🚀 Como usar este diagrama PlantUML</h3>
+            <p>Copie o código abaixo e cole em qualquer ferramenta que suporte PlantUML:</p>
+            <ul>
+                <li><strong>Online:</strong> <a href="http://www.plantuml.com/plantuml/uml/" target="_blank">PlantUML Online Server</a></li>
+                <li><strong>VS Code:</strong> Extensão "PlantUML"</li>
+                <li><strong>IntelliJ IDEA:</strong> Plugin "PlantUML integration"</li>
+                <li><strong>Eclipse:</strong> Plugin "PlantUML"</li>
+            </ul>
+        </div>
+        
+        <div class="code-container">
+            <div class="code-header">📄 hidrometro-simulator.puml</div>
+            <pre>@startuml Simulador de Hidrômetro
+
+!theme plain
+skinparam classAttributeIconSize 0
+skinparam classFontStyle bold
+skinparam classBackgroundColor White
+skinparam classBorderColor Black
+skinparam classArrowColor Black
+
+' Classe Controladora
+class Controladora {
+    - configuracao: Configuracao
+    - hidrometro: Hidrometro
+    - simulacaoAtiva: boolean
+    + Controladora()
+    + carregarConfiguracao(arquivo: String): void
+    + iniciarSimulacao(): void
+    + pararSimulacao(): void
+    + executar(): void
+}
+
+' Classe Hidrometro
+class Hidrometro {
+    - entrada: Entrada
+    - saida: Saida
+    - display: Display
+    - medidor: Medidor
+    - pressaoAtual: double
+    - volumeTotal: double
+    - funcionando: boolean
+    + Hidrometro()
+    + medir(): double
+    + calcularPressao(): double
+    + exibirImagem(): void
+    + iniciar(): void
+    + parar(): void
+    - processarFluxo(): void
+}
+
+' Classe Entrada
+class Entrada {
+    - vazaoEntrada: double
+    - diametroEntrada: double
+    - fluxoAtual: double
+    - temAgua: boolean
+    + Entrada(vazao: double, diametro: double)
+    + getFluxoAtual(): double
+    + setVazaoEntrada(vazao: double): void
+    + simularFaltaAgua(): void
+    + calcularFluxoComAr(): double
+}
+
+' Classe Saida
+class Saida {
+    - vazaoSaida: double
+    - diametroSaida: double
+    - fluxoSaida: double
+    + Saida(vazao: double, diametro: double)
+    + getFluxoSaida(): double
+    + setVazaoSaida(vazao: double): void
+    + calcularPressaoSaida(): double
+}
+
+' Classe Medidor
+class Medidor {
+    - volumeAcumulado: double
+    - vazaoAtual: double
+    - ultimaMedicao: long
+    - precisao: double
+    + Medidor()
+    + medirVolume(fluxo: double): double
+    + calcularVazao(): double
+    + resetarMedicao(): void
+    + getVolumeTotal(): double
+}
+
+' Classe Display
+class Display {
+    - vazaoExibida: double
+    - volumeExibido: double
+    - pressaoExibida: double
+    - statusConexao: String
+    + Display()
+    + atualizarDisplay(vazao: double, volume: double, pressao: double): void
+    + exibirInformacoes(): String
+    + gerarImagem(): BufferedImage
+}
+
+' Classe Configuracao
+class Configuracao {
+    - vazaoEntrada: double
+    - vazaoSaida: double
+    - chanceFaltaAgua: int
+    - diametroEntrada: double
+    - diametroSaida: double
+    - tempoSimulacao: int
+    + Configuracao()
+    + carregarDeArquivo(arquivo: String): void
+    + validarConfiguracao(): boolean
+    + getVazaoEntrada(): double
+    + getVazaoSaida(): double
+    + getChanceFaltaAgua(): int
+}
+
+' Classe GeradorImagem
+class GeradorImagem {
+    - largura: int
+    - altura: int
+    - contadorImagens: int
+    + GeradorImagem()
+    + criarImagemHidrometro(dados: DadosHidrometro): BufferedImage
+    + salvarImagem(imagem: BufferedImage, nome: String): void
+    - desenharMostrador(g2d: Graphics2D, dados: DadosHidrometro): void
+}
+
+' Classe DadosHidrometro
+class DadosHidrometro {
+    - vazao: double
+    - volume: double
+    - pressao: double
+    - timestamp: long
+    - statusAgua: boolean
+    + DadosHidrometro(vazao: double, volume: double, pressao: double)
+    + getVazao(): double
+    + getVolume(): double
+    + getPressao(): double
+    + toString(): String
+}
+
+' Relacionamentos
+Controladora *-- Hidrometro : possui
+Controladora o-- Configuracao : usa
+Hidrometro *-- Entrada : possui
+Hidrometro *-- Saida : possui
+Hidrometro *-- Medidor : possui
+Hidrometro *-- Display : possui
+Display ..> GeradorImagem : usa
+GeradorImagem ..> DadosHidrometro : recebe
+
+note top of Controladora : Classe principal que\norquestra a simulação
+
+note right of Hidrometro : Representa o hidrômetro\ncom todos seus componentes
+
+note bottom of Configuracao : Carrega parâmetros\ndo arquivo de entrada
+
+@enduml</pre>
+        </div>
+        
+        <div class="features">
+            <div class="feature">
+                <h4>🎯 Relacionamentos</h4>
+                <p><strong>*--</strong> Composição (parte integral)<br>
+                <strong>o--</strong> Agregação (usa/tem)<br>
+                <strong>..></strong> Dependência (usa temporariamente)</p>
+            </div>
+            
+            <div class="feature">
+                <h4>🔒 Visibilidade</h4>
+                <p><strong>+</strong> Público<br>
+                <strong>-</strong> Privado<br>
+                <strong>#</strong> Protegido</p>
+            </div>
+            
+            <div class="feature">
+                <h4>📝 Notas</h4>
+                <p>Incluí notas explicativas para as classes principais que esclarecem suas responsabilidades no sistema.</p>
+            </div>
+            
+            <div class="feature">
+                <h4>🎨 Tema</h4>
+                <p>Configurado com tema limpo e cores consistentes para melhor visualização do diagrama.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

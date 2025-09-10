@@ -1,0 +1,33 @@
+/* Estilos adicionais para melhor visualização */
+.class-box {
+  min-height: 400px;
+}
+
+.method.constructor {
+  background: #e8f5e8;
+  border-left: 3px solid #27ae60;
+}
+
+.attribute.static {
+  text-decoration: underline;
+}
+
+.relationship-arrow {
+  font-size: 1.2em;
+  color: #3498db;
+  margin: 0 10px;
+}
+
+@media (max-width: 768px) {
+  .uml-diagram {
+    grid-template-columns: 1fr;
+  }
+
+  .container {
+    padding: 15px;
+  }
+
+  h1 {
+    font-size: 2em;
+  }
+}

@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagrama UML - Simulador de Hidrômetro</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .uml-diagram {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        .class-box {
+            border: 2px solid #34495e;
+            border-radius: 10px;
+            background: #ffffff;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .class-box:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+        }
+        
+        .class-header {
+            background: #3498db;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.2em;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .class-attributes, .class-methods {
+            padding: 15px;
+        }
+        
+        .class-attributes {
+            border-bottom: 1px solid #ecf0f1;
+            background: #f8f9fa;
+        }
+        
+        .class-methods {
+            background: #ffffff;
+        }
+        
+        .section-title {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        
+        .attribute, .method {
+            margin: 8px 0;
+            padding: 5px 10px;
+            background: #ecf0f1;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        
+        .private { color: #e74c3c; }
+        .public { color: #27ae60; }
+        .protected { color: #f39c12; }
+        
+        .relationships {
+            margin-top: 40px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 5px solid #3498db;
+        }
+        
+        .relationship {
+            margin: 10px 0;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .legend {
+            margin-top: 30px;
+            padding: 20px;
+            background: #2c3e50;
+            color: white;
+            border-radius: 10px;
+        }
+        
+        .legend-item {
+            margin: 5px 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Diagrama UML - Simulador de Hidrômetro</h1>
+        
+        <div class="uml-diagram">
+            <!-- Classe Controladora -->
+            <div class="class-box">
+                <div class="class-header">Controladora</div>
+                <div class="class-attributes">
+                    <div class="section-title">Atributos</div>
+                    <div class="attribute private">- configuracao: Configuracao</div>
+                    <div class="attribute private">- hidrometro: Hidrometro</div>
+                    <div class="attribute private">- simulacaoAtiva: boolean</div>
+                </div>
+                <div class="class-methods">
+                    <div class="section-title">Métodos</div>
+                    <div class="method public">+ Controladora()</div>
+                    <div class="method public">+ carregarConfiguracao(arquivo: String): void</div>
+                    <div class="method public">+ iniciarSimulacao(): void</div>
+                    <div class="method public">+ pararSimulacao(): void</div>
+                    <div class="method public">+ executar(): void</div>
+                </div>
+            </div>
+
+            <!-- Classe Hidrometro -->
+            <div class="class-box">
+                <div class="class-header">Hidrometro</div>
+                <div class="class-attributes">
+                    <div class="section-title">Atributos</div>
+                    <div class="attribute private">- entrada: Entrada</div>
+                    <div class="attribute private">- saida: Saida</div>
+                    <div class="attribute private">- display: Display</div>
+                    <div class="attribute private">- medidor: Medidor</div>
+                    <div class="attribute private">- pressaoAtual: double</div>
+                    <div class="attribute private">- volumeTotal: double</div>
+                    <div class="attribute private">- funcionando: boolean</div>
+                </div>
+                <div class="class-methods">
+                    <div class="section-title">Métodos</div>
+                    <div class="method public">+ Hidrometro()</div>
+                    <div class="method public">+ medir(): double</div>
+                    <div class="method public">+ calcularPressao(): double</div>
+                    <div class="method public">+ exibirImagem(): void</div>
+                    <div class="method public">+ iniciar(): void</div>
+                    <div class="method public">+ parar(): void</div>
+                    <div class="method private">- processarFluxo(): void</div>
+                </div>
+            </div>
+
+            <!-- Classe Entrada -->
+            <div class="class-box">
+                <div class="class-header">Entrada</div>
+                <div class="class-attributes">
+                    <div class="section-title">Atributos</div>
+                    <div class="attribute private">- vazaoEntrada: double</div>
+                    <div class="attribute private">- diametroEntrada: double</div>
+                    <div class="attribute private">- fluxoAtual: double</div>
+                    <div class="attribute private">- temAgua: boolean</div>
+                </div>
+                <div class="class-methods">
+                    <div class="section-title">Métodos</div>
+                    <div class="method public">+ Entrada(vazao: double, diametro: double)</div>
+                    <div class="method public">+ getFluxoAtual(): double</div>
+                    <div class="method public">+ setVazaoEntrada(vazao: double): void</div>
+                    <div class="method public">+ simularFaltaAgua(): void</div>
+                    <div class="method public">+ calcularFluxoComAr(): double</div>
+                </div>
+            </div>
+
+            <!-- Classe Saida -->
+            <div class="class-box">
+                <div class="class-header">Saida</div>
+                <div class="class-attributes">
+                    <div class="section-title">Atributos</div>
+                    <div class="attribute private">- vazaoSaida: double</div>
+                    <div class="attribute private">- diametroSaida: double</div>
+                    <div class="attribute private">- fluxoSaida: double</div>
+                </div>
+                <div class="class-methods">
+                    <div class="section-title">Métodos</div>
+                    <div class="method public">+ Saida(vazao: double, diametro: double)</div>
+                    <div class="method public">+ getFluxoSaida(): double</div>
+                    <div class="method public">+ setVazaoSaida(vazao: double): void</div>
+                    <div class="method public">+ calcularPressaoSaida(): double</div>
+                </div>
+            </div>
+
+            <!-- Classe Medidor -->
+            <div class="class-box">
+                <div class="class-header">Medidor</div>
+                <div class="class-attributes">
+                    <div class="section-title">Atributos</div>
+                    <div class="attribute private">- volumeAcumulado: double</div>
+                    <div class="attribute private">- vazaoAtual: double</div>
+                    <div class="attribute private">- ultimaMedicao: long</div>
+                    <div class="attribute private">- precisao: double</div>
+                </div>
+                <div class="class-methods">
+                    <div class="section-title">Métodos</div>
+                    <div class="method public">+ Medidor()</div>
+                    <div class="method public">+ medirVolume(fluxo: double): double</div>
+                    <div class="method public">+ calcularVazao(): double</div>
+                    <div class="method public">+ resetarMedicao(): void</div>
+                    <div class="method public">+ getVolumeTotal(): double</div>
+                </div>
+            </div>
+
+            <!-- Classe Display -->
+            <div class="class-box">
+                <div class="class-header">Display</div>
+                <div class="class-attributes">
+                    <div class="section-title">Atributos</div>
+                    <div class="attribute private">- vazaoExibida: double</div>
+                    <div class="attribute private">- volumeExibido: double</div>
+                    <div class="attribute private">- pressaoExibida: double</div>
+                    <div class="attribute private">- statusConexao: String</div>
+                </div>
+                <div class="class-methods">
+                    <div class="section-title">Métodos</div>
+                    <div class="method public">+ Display()</div>
+                    <div class="method public">+ atualizarDisplay(vazao: double, volume: double, pressao: double): void</div>
+                    <div class="method public">+ exibirInformacoes(): String</div>
+                    <div class="method public">+ gerarImagem(): BufferedImage</div>
+                </div>
+            </div>
+
+            <!-- Classe Configuracao -->
+            <div class="class-box">
+                <div class="class-header">Configuracao</div>
+                <div class="class-attributes">
+                    <div class="section-title">Atributos</div>
+                    <div class="attribute private">- vazaoEntrada: double</div>
+                    <div class="attribute private">- vazaoSaida: double</div>
+                    <div class="attribute private">- chanceFaltaAgua: int</div>
+                    <div class="attribute private">- diametroEntrada: double</div>
+                    <div class="attribute private">- diametroSaida: double</div>
+                    <div class="attribute private">- tempoSimulacao: int</div>
+                </div>
+                <div class="class-methods">
+                    <div class="section-title">Métodos</div>
+                    <div class="method public">+ Configuracao()</div>
+                    <div class="method public">+ carregarDeArquivo(arquivo: String): void</div>
+                    <div class="method public">+ validarConfiguracao(): boolean</div>
+                    <div class="method public">+ getVazaoEntrada(): double</div>
+                    <div class="method public">+ getVazaoSaida(): double</div>
+                    <div class="method public">+ getChanceFaltaAgua(): int</div>
+                </div>
+            </div>
+
+            <!-- Classe GeradorImagem -->
+            <div class="class-box">
+                <div class="class-header">GeradorImagem</div>
+                <div class="class-attributes">
+                    <div class="section-title">Atributos</div>
+                    <div class="attribute private">- largura: int</div>
+                    <div class="attribute private">- altura: int</div>
+                    <div class="attribute private">- contadorImagens: int</div>
+                </div>
+                <div class="class-methods">
+                    <div class="section-title">Métodos</div>
+                    <div class="method public">+ GeradorImagem()</div>
+                    <div class="method public">+ criarImagemHidrometro(dados: DadosHidrometro): BufferedImage</div>
+                    <div class="method public">+ salvarImagem(imagem: BufferedImage, nome: String): void</div>
+                    <div class="method private">- desenharMostrador(g2d: Graphics2D, dados: DadosHidrometro): void</div>
+                </div>
+            </div>
+
+            <!-- Classe DadosHidrometro -->
+            <div class="class-box">
+                <div class="class-header">DadosHidrometro</div>
+                <div class="class-attributes">
+                    <div class="section-title">Atributos</div>
+                    <div class="attribute private">- vazao: double</div>
+                    <div class="attribute private">- volume: double</div>
+                    <div class="attribute private">- pressao: double</div>
+                    <div class="attribute private">- timestamp: long</div>
+                    <div class="attribute private">- statusAgua: boolean</div>
+                </div>
+                <div class="class-methods">
+                    <div class="section-title">Métodos</div>
+                    <div class="method public">+ DadosHidrometro(vazao: double, volume: double, pressao: double)</div>
+                    <div class="method public">+ getVazao(): double</div>
+                    <div class="method public">+ getVolume(): double</div>
+                    <div class="method public">+ getPressao(): double</div>
+                    <div class="method public">+ toString(): String</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="relationships">
+            <h2>🔗 Relacionamentos entre Classes</h2>
+            <div class="relationship">
+                <strong>Controladora</strong> ──► <strong>Hidrometro</strong> (Composição 1:1)
+                <br><em>A Controladora possui e gerencia um Hidrômetro</em>
+            </div>
+            <div class="relationship">
+                <strong>Controladora</strong> ──► <strong>Configuracao</strong> (Agregação 1:1)
+                <br><em>A Controladora usa uma Configuração para inicializar o sistema</em>
+            </div>
+            <div class="relationship">
+                <strong>Hidrometro</strong> ──► <strong>Entrada</strong> (Composição 1:1)
+                <br><em>O Hidrômetro possui uma Entrada de água</em>
+            </div>
+            <div class="relationship">
+                <strong>Hidrometro</strong> ──► <strong>Saida</strong> (Composição 1:1)
+                <br><em>O Hidrômetro possui uma Saída de água</em>
+            </div>
+            <div class="relationship">
+                <strong>Hidrometro</strong> ──► <strong>Medidor</strong> (Composição 1:1)
+                <br><em>O Hidrômetro possui um Medidor interno</em>
+            </div>
+            <div class="relationship">
+                <strong>Hidrometro</strong> ──► <strong>Display</strong> (Composição 1:1)
+                <br><em>O Hidrômetro possui um Display para mostrar informações</em>
+            </div>
+            <div class="relationship">
+                <strong>Display</strong> ──► <strong>GeradorImagem</strong> (Dependência)
+                <br><em>O Display usa o GeradorImagem para criar visualizações</em>
+            </div>
+            <div class="relationship">
+                <strong>GeradorImagem</strong> ──► <strong>DadosHidrometro</strong> (Dependência)
+                <br><em>O GeradorImagem recebe DadosHidrometro para criar imagens</em>
+            </div>
+        </div>
+
+        <div class="legend">
+            <h3>📋 Legenda</h3>
+            <div class="legend-item">
+                <div class="legend-color private"></div>
+                <span>Atributos/Métodos Privados (-)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color public"></div>
+                <span>Atributos/Métodos Públicos (+)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color protected"></div>
+                <span>Atributos/Métodos Protegidos (#)</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

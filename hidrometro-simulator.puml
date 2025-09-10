@@ -1,0 +1,146 @@
+@startuml Simulador de Hidrômetro
+
+!theme plain
+skinparam classAttributeIconSize 0
+skinparam classFontStyle bold
+skinparam classBackgroundColor White
+skinparam classBorderColor Black
+skinparam classArrowColor Black
+
+' Classe Controladora
+class Controladora {
+    - configuracao: Configuracao
+    - hidrometro: Hidrometro
+    - simulacaoAtiva: boolean
+    + Controladora()
+    + carregarConfiguracao(arquivo: String): void
+    + iniciarSimulacao(): void
+    + pararSimulacao(): void
+    + executar(): void
+}
+
+' Classe Hidrometro
+class Hidrometro {
+    - input: Entrada
+    - output: Saida
+    - display: Display
+    - medidor: Medidor
+    - pressaoAtual: double
+    - volumeTotal: double
+    - funcionando: boolean
+    + Hidrometro()
+    + medir(): double
+    + calcularPressao(): double
+    + exibirImagem(): void
+    + iniciar(): void
+    + parar(): void
+    - processarFluxo(): void
+}
+
+' Classe Entrada
+class Entrada {
+    - vazaoEntrada: double
+    - diametroEntrada: double
+    - fluxoAtual: double
+    - temAgua: boolean
+    + Entrada(vazao: double, diametro: double)
+    + getFluxoAtual(): double
+    + setVazaoEntrada(vazao: double): void
+    + simularFaltaAgua(): void
+    + calcularFluxoComAr(): double
+}
+
+' Classe Saida
+class Saida {
+    - vazaoSaida: double
+    - diametroSaida: double
+    - fluxoSaida: double
+    + Saida(vazao: double, diametro: double)
+    + getFluxoSaida(): double
+    + setVazaoSaida(vazao: double): void
+    + calcularPressaoSaida(): double
+}
+
+' Classe Medidor
+class Medidor {
+    - volumeAcumulado: double
+    - vazaoAtual: double
+    - ultimaMedicao: long
+    - precisao: double
+    + Medidor()
+    + medirVolume(fluxo: double): double
+    + calcularVazao(): double
+    + resetarMedicao(): void
+    + getVolumeTotal(): double
+}
+
+' Classe Display
+class Display {
+    - vazaoExibida: double
+    - volumeExibido: double
+    - pressaoExibida: double
+    - statusConexao: String
+    + Display()
+    + atualizarDisplay(vazao: double, volume: double, pressao: double): void
+    + exibirInformacoes(): String
+    + gerarImagem(): BufferedImage
+}
+
+' Classe Configuracao
+class Configuracao {
+    - vazaoEntrada: double
+    - vazaoSaida: double
+    - chanceFaltaAgua: int
+    - diametroEntrada: double
+    - diametroSaida: double
+    - tempoSimulacao: int
+    + Configuracao()
+    + carregarDeArquivo(arquivo: String): void
+    + validarConfiguracao(): boolean
+    + getVazaoEntrada(): double
+    + getVazaoSaida(): double
+    + getChanceFaltaAgua(): int
+}
+
+' Classe GeradorImagem
+class GeradorImagem {
+    - largura: int
+    - altura: int
+    - contadorImagens: int
+    - qualidadeJpeg: float
+    + GeradorImagem()
+    + criarImagemHidrometro(dados: DadosHidrometro): BufferedImage
+    + salvarImagem(imagem: BufferedImage, nome: String): void
+    + salvarImagemJPEG(imagem: BufferedImage, nome: String): void
+    + salvarImagemJPEG(imagem: BufferedImage, nome: String, qualidade: float): void
+    + salvarImagemPNG(imagem: BufferedImage, nome: String): void
+    + setQualidadeJpeg(qualidade: float): void
+    - desenharMostrador(g2d: Graphics2D, dados: DadosHidrometro): void
+    - obterFormatoSuportado(formato: String): boolean
+}
+
+' Classe DadosHidrometro
+class DadosHidrometro {
+    - vazao: double
+    - volume: double
+    - pressao: double
+    - timestamp: long
+    - statusAgua: boolean
+    + DadosHidrometro(vazao: double, volume: double, pressao: double)
+    + getVazao(): double
+    + getVolume(): double
+    + getPressao(): double
+    + toString(): String
+}
+
+' Relacionamentos
+Controladora *-- Hidrometro : possui
+Controladora o-- Configuracao : usa
+Hidrometro *-- Entrada : possui
+Hidrometro *-- Saida : possui
+Hidrometro *-- Medidor : possui
+Hidrometro *-- Display : possui
+Display ..> GeradorImagem : usa
+GeradorImagem ..> DadosHidrometro : recebe
+
+@enduml

@@ -6,8 +6,12 @@ skinparam classFontStyle bold
 skinparam classBackgroundColor White
 skinparam classBorderColor Black
 skinparam classArrowColor Black
+top to bottom direction
 
-' Classe Controladora
+' ===== Main chama Controladora =====
+class Main {
+    + main(args: String[]): void
+}
 class Controladora {
     - configuracao: Configuracao
     - hidrometro: Hidrometro
@@ -18,8 +22,9 @@ class Controladora {
     + pararSimulacao(): void
     + executar(): void
 }
+Main --> Controladora : chama
 
-' Classe Hidrometro
+' ===== Núcleo =====
 class Hidrometro {
     - input: Entrada
     - output: Saida
@@ -28,6 +33,7 @@ class Hidrometro {
     - pressaoAtual: double
     - volumeTotal: double
     - funcionando: boolean
+    - config: ConfiguracaoDTO
     + Hidrometro()
     + medir(): double
     + calcularPressao(): double
@@ -37,7 +43,6 @@ class Hidrometro {
     - processarFluxo(): void
 }
 
-' Classe Entrada
 class Entrada {
     - vazaoEntrada: double
     - diametroEntrada: double
@@ -50,7 +55,6 @@ class Entrada {
     + calcularFluxoComAr(): double
 }
 
-' Classe Saida
 class Saida {
     - vazaoSaida: double
     - diametroSaida: double
@@ -61,7 +65,6 @@ class Saida {
     + calcularPressaoSaida(): double
 }
 
-' Classe Medidor
 class Medidor {
     - volumeAcumulado: double
     - vazaoAtual: double
@@ -74,35 +77,72 @@ class Medidor {
     + getVolumeTotal(): double
 }
 
-' Classe Display
+' ===== Display (atualizado) =====
 class Display {
     - vazaoExibida: double
     - volumeExibido: double
     - pressaoExibida: double
     - statusConexao: String
+    - faltaAgua: boolean
+    - imagemHidrometro: BufferedImage
+    --
+    - frame: JFrame
+    - labelVazao: JLabel
+    - labelVolume: JLabel
+    - labelPressao: JLabel
+    - labelStatus: JLabel
+    - sliderVazao: JSlider
+    --
     + Display()
     + atualizarDisplay(vazao: double, volume: double, pressao: double): void
-    + exibirInformacoes(): String
-    + gerarImagem(): BufferedImage
+    + atualizarDados(): void
+    + mostrarInterface(): void
+    + ocultarInterface(): void
 }
 
-' Classe Configuracao
 class Configuracao {
-    - vazaoEntrada: double
-    - vazaoSaida: double
-    - chanceFaltaAgua: int
-    - diametroEntrada: double
-    - diametroSaida: double
-    - tempoSimulacao: int
+    - config: ConfiguracaoDTO
     + Configuracao()
     + carregarDeArquivo(arquivo: String): void
-    + validarConfiguracao(): boolean
+    + getConfig(): ConfiguracaoDTO
     + getVazaoEntrada(): double
     + getVazaoSaida(): double
     + getChanceFaltaAgua(): int
+    + getDiametroEntrada(): double
+    + getDiametroSaida(): double
+    + getTempoSimulacao(): int
+    + getTempoAtualizacao(): int
+    + getPrecisaoMedidor(): double
+    + getTipoFluido(): TipoFluido
+    + isModoDebug(): boolean
 }
 
-' Classe GeradorImagem
+' ===== NOVO: ConfiguracaoDTO =====
+class ConfiguracaoDTO {
+    - vazaoEntrada: double
+    - vazaoSaida: double
+    - diametroEntrada: double
+    - diametroSaida: double
+    - chanceFaltaAgua: int
+    - tempoSimulacao: int
+    - tempoAtualizacao: int
+    - precisaoMedidor: double
+    - tipoFluido: TipoFluido
+    - modoDebug: boolean
+    + ConfiguracaoDTO()
+    + vazaoEntrada(): double
+    + vazaoSaida(): double
+    + diametroEntrada(): double
+    + diametroSaida(): double
+    + chanceFaltaAgua(): int
+    + tempoSimulacao(): int
+    + tempoAtualizacao(): int
+    + precisaoMedidor(): double
+    + tipoFluido(): TipoFluido
+    + modoDebug(): boolean
+    + isValida(): boolean
+}
+
 class GeradorImagem {
     - largura: int
     - altura: int
@@ -119,7 +159,6 @@ class GeradorImagem {
     - obterFormatoSuportado(formato: String): boolean
 }
 
-' Classe DadosHidrometro
 class DadosHidrometro {
     - vazao: double
     - volume: double
@@ -130,17 +169,29 @@ class DadosHidrometro {
     + getVazao(): double
     + getVolume(): double
     + getPressao(): double
+    + isStatusAgua(): boolean
     + toString(): String
 }
 
-' Relacionamentos
+' ===== TipoFluido (sozinho) =====
+class TipoFluido {
+    + AGUA
+    + AR
+    + getDescricao(): String
+    + toString(): String
+}
+
+' ===== Relacionamentos =====
 Controladora *-- Hidrometro : possui
 Controladora o-- Configuracao : usa
 Hidrometro *-- Entrada : possui
 Hidrometro *-- Saida : possui
 Hidrometro *-- Medidor : possui
 Hidrometro *-- Display : possui
-Display ..> GeradorImagem : usa
+' Hidrometro usa ConfiguracaoDTO internamente
+Hidrometro o-- ConfiguracaoDTO : usa
+' Configuracao contém/expõe ConfiguracaoDTO
+Configuracao o-- ConfiguracaoDTO : usa
 GeradorImagem ..> DadosHidrometro : recebe
 
 @enduml

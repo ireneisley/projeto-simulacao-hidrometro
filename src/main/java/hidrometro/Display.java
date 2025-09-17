@@ -5,10 +5,6 @@ import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 
-/**
- * Componente responsável pela exibição visual do hidrômetro usando Swing
- * (versão: apenas melhora das legendas do painel direito)
- */
 public class Display extends JPanel {
     private double vazaoExibida;
     private double volumeExibido;
@@ -22,6 +18,7 @@ public class Display extends JPanel {
     private JLabel labelVolume;
     private JLabel labelPressao;
     private JLabel labelStatus;
+    private JSlider sliderVazao;
 
     public Display() {
         this.vazaoExibida = 0.0;
@@ -43,49 +40,70 @@ public class Display extends JPanel {
         setLayout(new BorderLayout());
         setBackground(Color.WHITE);
 
-        // Painel de informações (MANTIDO) — só deixamos mais bonito
-        JPanel painelInfo = new JPanel(new GridLayout(4, 1, 8, 12));
+        // Painel de informações
+        JPanel painelInfo = new JPanel(new GridLayout(4, 1, 25, 30));
         painelInfo.setBorder(BorderFactory.createTitledBorder("Medições"));
-        painelInfo.setBackground(new Color(248, 249, 252)); // NOVO: leve cinza
+        painelInfo.setBackground(new Color(248, 249, 252));
         painelInfo.setOpaque(true);
-        painelInfo.setPreferredSize(new Dimension(230, 0)); // NOVO: fixo p/ caber melhor
+        painelInfo.setPreferredSize(new Dimension(230, 0));
 
-        // NOVO: fontes um pouco maiores
-        Font titulo = new Font("Arial", Font.BOLD, 13);
         Font valor = new Font("Arial", Font.BOLD, 18);
 
-        // Criamos já com HTML (para título + número grande + unidade)
         labelVazao  = new JLabel();
         labelVolume = new JLabel();
         labelPressao= new JLabel();
         labelStatus = new JLabel();
 
-        // NOVO: alinhamento e fonte base
         for (JLabel l : new JLabel[]{labelVazao, labelVolume, labelPressao, labelStatus}) {
             l.setHorizontalAlignment(SwingConstants.LEFT);
             l.setFont(valor);
             l.setOpaque(true);
-            l.setBackground(new Color(255, 255, 255));
+            l.setBackground(Color.WHITE);
             l.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
         }
 
-        // Tooltips didáticas
         labelVazao.setToolTipText("Vazão instantânea estimada (litros por minuto).");
         labelVolume.setToolTipText("Volume acumulado desde o início da simulação (em litros).");
         labelPressao.setToolTipText("Pressão aproximada na rede (bar).");
         labelStatus.setToolTipText("Estado operacional com base em fluxo e pressão.");
 
-        // Adiciona ao painel (mesma ordem)
-        painelInfo.add(labelVazao);
+        // === Slider de Vazão ===
+        sliderVazao = new JSlider(JSlider.HORIZONTAL, 0, 100, 0);
+        sliderVazao.setBackground(Color.WHITE);
+        sliderVazao.setOpaque(true);
+        sliderVazao.setBorder(BorderFactory.createEmptyBorder(0, 10, 8, 10)); 
+        sliderVazao.setPaintTicks(false);
+        sliderVazao.setPaintLabels(false);
+        sliderVazao.setToolTipText("Ajuste manual da vazão (0.0 a 10.0 L/min).");
+        sliderVazao.setValue((int)Math.round(vazaoExibida * 10));
+        sliderVazao.addChangeListener(e -> {
+            if (!faltaAgua) {
+                double novaVazao = sliderVazao.getValue() / 10.0;
+                atualizarDisplay(novaVazao, volumeExibido, pressaoExibida);
+            } else {
+                sliderVazao.setValue(0); // trava em 0 se faltar água
+            }
+        });
+
+        // === Painel da Vazão (UM bloco com label em cima e slider embaixo) ===
+        JPanel painelVazao = new JPanel(new BorderLayout());
+        painelVazao.setOpaque(true);
+        painelVazao.setBackground(Color.WHITE);
+        painelVazao.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createEmptyBorder(0, 0, 0, 0),
+                BorderFactory.createEmptyBorder(0, 0, 0, 0)
+        ));
+        painelVazao.add(labelVazao, BorderLayout.NORTH);
+        painelVazao.add(sliderVazao, BorderLayout.SOUTH);
+
+        painelInfo.add(painelVazao);  
         painelInfo.add(labelVolume);
         painelInfo.add(labelPressao);
         painelInfo.add(labelStatus);
 
         add(painelInfo, BorderLayout.EAST);
-
         frame.add(this);
 
-        // NOVO: inicializa textos bonitos
         atualizarDados();
     }
 
@@ -94,13 +112,10 @@ public class Display extends JPanel {
             java.net.URL imageUrl = getClass().getClassLoader().getResource("images/hidrometro-base.png");
             if (imageUrl != null) {
                 imagemHidrometro = javax.imageio.ImageIO.read(imageUrl);
-                System.out.println("Imagem do hidrômetro carregada com sucesso!");
             } else {
-                System.err.println("Imagem do hidrômetro não encontrada, criando imagem padrão...");
                 criarImagemPadrao();
             }
         } catch (Exception e) {
-            System.err.println("Erro ao carregar imagem do hidrômetro: " + e.getMessage());
             criarImagemPadrao();
         }
     }
@@ -109,20 +124,11 @@ public class Display extends JPanel {
         imagemHidrometro = new BufferedImage(400, 400, BufferedImage.TYPE_INT_RGB);
         Graphics2D g2d = imagemHidrometro.createGraphics();
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-        // Fundo branco
         g2d.setColor(Color.WHITE);
         g2d.fillRect(0, 0, 400, 400);
-
-        // Círculo principal
         g2d.setColor(Color.DARK_GRAY);
         g2d.setStroke(new BasicStroke(4));
         g2d.drawOval(50, 50, 300, 300);
-
-        // Fundo do mostrador
-        g2d.setColor(new Color(240, 240, 240));
-        g2d.fillOval(52, 52, 296, 296);
-
         g2d.dispose();
     }
 
@@ -142,12 +148,18 @@ public class Display extends JPanel {
             faltaAgua = false;
         }
 
+        // mantém slider coerente
+        if (!faltaAgua) {
+            sliderVazao.setValue((int)Math.round(vazaoExibida * 10));
+        } else {
+            sliderVazao.setValue(0);
+        }
+
         atualizarDados();
     }
 
-    // ===== NOVO: helpers de formatação das legendas (HTML simples no JLabel) =====
+    // ===== helpers de formatação das legendas =====
     private static String fmtLinha(String titulo, String emoji, String valor, String unidade, Color corValor) {
-        // HTML suportado pelo JLabel: inline básico
         String hex = String.format("#%02x%02x%02x", corValor.getRed(), corValor.getGreen(), corValor.getBlue());
         return String.format(
             "<html><div style='font-family: Arial;'>" +
@@ -164,40 +176,35 @@ public class Display extends JPanel {
             "<span style='color:%s;'>●</span> <b style='color:%s;'>%s</b>" +
             "</div></html>", hex, hex, texto);
     }
-    // ===== FIM helpers =====
+    // ===== fim helpers =====
 
     public void atualizarDados() {
         SwingUtilities.invokeLater(() -> {
-            // Cores para os valores
             Color corVazao   = (vazaoExibida > 0) ? new Color(37, 99, 235) : new Color(107, 114, 128);
             Color corVolume  = new Color(16, 185, 129);
             Color corPressao = (pressaoExibida < 0.5) ? new Color(245, 158, 11) : new Color(34, 197, 94);
 
             labelVazao.setText(
-                fmtLinha("Vazão", "💧",
+                fmtLinha("Vazão", "",
                         String.format("%.2f", vazaoExibida),
                         "L/min", corVazao)
             );
             labelVolume.setText(
-                fmtLinha("Volume", "📦",
+                fmtLinha("Volume", "",
                         String.format("%.3f", volumeExibido),
                         "L", corVolume)
             );
             labelPressao.setText(
-                fmtLinha("Pressão", "🧭",
+                fmtLinha("Pressão", "",
                         String.format("%.2f", pressaoExibida),
                         "bar", corPressao)
             );
 
-            // Mantém sua mesma lógica de cor do status
             if (faltaAgua) {
-                labelStatus.setForeground(new Color(220, 38, 38));
                 labelStatus.setText(fmtStatus("Sem fluxo", new Color(220,38,38)));
             } else if (pressaoExibida < 0.5) {
-                labelStatus.setForeground(new Color(234, 88, 12));
                 labelStatus.setText(fmtStatus("Pressão baixa", new Color(234,88,12)));
             } else {
-                labelStatus.setForeground(new Color(22, 163, 74));
                 labelStatus.setText(fmtStatus("Normal", new Color(22,163,74)));
             }
 
@@ -208,13 +215,12 @@ public class Display extends JPanel {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-
         if (imagemHidrometro == null) return;
 
         Graphics2D g2d = (Graphics2D) g.create();
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        int displayWidth = getWidth() - 200; // Deixar espaço para o painel de informações
+        int displayWidth = getWidth() - 200; // espaço para o painel de informações
         int displayHeight = getHeight();
 
         double scaleX = (double) displayWidth / imagemHidrometro.getWidth();
@@ -267,19 +273,14 @@ public class Display extends JPanel {
 
     private void desenharPonteiroReal(Graphics2D g2d, int centerX, int centerY, double angulo, int comprimento, Color cor, int espessura) {
         AffineTransform transform = g2d.getTransform();
-
         g2d.translate(centerX, centerY);
         g2d.rotate(Math.toRadians(angulo));
-
         g2d.setColor(cor);
         g2d.setStroke(new BasicStroke(espessura));
         g2d.drawLine(0, 0, comprimento, 0);
-
         g2d.fillPolygon(new int[]{comprimento-3, comprimento, comprimento-3},
                 new int[]{-2, 0, 2}, 3);
-
         g2d.setTransform(transform);
-
         g2d.setColor(Color.BLACK);
         g2d.fillOval(centerX-2, centerY-2, 4, 4);
     }
@@ -290,23 +291,5 @@ public class Display extends JPanel {
 
     public void ocultarInterface() {
         SwingUtilities.invokeLater(() -> frame.setVisible(false));
-    }
-
-    public String exibirInformacoes() {
-        return String.format(
-            "=== HIDRÔMETRO ===\n" +
-            "Vazão: %.2f L/min\n" +
-            "Volume: %.3f L\n" +
-            "Pressão: %.2f bar\n" +
-            "Status: %s\n" +
-            "================",
-            vazaoExibida, volumeExibido, pressaoExibida, statusConexao
-        );
-    }
-
-    public BufferedImage gerarImagem() {
-        GeradorImagem gerador = new GeradorImagem();
-        DadosHidrometro dados = new DadosHidrometro(vazaoExibida, volumeExibido, pressaoExibida);
-        return gerador.criarImagemHidrometro(dados);
     }
 }

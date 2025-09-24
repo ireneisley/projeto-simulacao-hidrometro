@@ -1,5 +1,17 @@
 @startuml Simulador de Hidrômetro
 
+' ==============================================
+' Diagrama de Classes - SHA 2.0
+' Ferramenta utilizada: PlantUML
+' Site usado para gerar o diagrama: https://www.plantuml.com/plantuml
+'
+' Como visualizar:
+' 1. Copie todo o conteúdo deste arquivo (.puml).
+' 2. Acesse o site https://www.plantuml.com/plantuml
+' 3. Cole o código na caixa de edição.
+' 4. Clique em "Submit" para gerar a imagem do diagrama.
+' ==============================================
+
 !theme plain
 skinparam classAttributeIconSize 0
 skinparam classFontStyle bold

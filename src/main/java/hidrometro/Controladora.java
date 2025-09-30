@@ -6,29 +6,33 @@ import java.time.format.DateTimeFormatter;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.List;
+import java.util.ArrayList;
 
 /**
- * Classe principal que orquestra a simulação do hidrômetro
+ * Classe principal que orquestra a simulação de múltiplos hidrômetros
  */
 public class Controladora {
     private Configuracao configuracao;
-    private Hidrometro hidrometro;
+    private List<Hidrometro> hidrometros;
     private boolean simulacaoAtiva;
-    
+
     private ScheduledExecutorService scheduler;
     private ScheduledExecutorService schedulerEventos;
     private ScheduledExecutorService schedulerImagens;
-    
-    private JFrame frame;
-    
+
+    private List<JFrame> frames;
+
     public Controladora() {
         this.configuracao = new Configuracao();
+        this.hidrometros = new ArrayList<>();
+        this.frames = new ArrayList<>();
         this.simulacaoAtiva = false;
-        this.scheduler = Executors.newScheduledThreadPool(2);
-        this.schedulerEventos = Executors.newScheduledThreadPool(1);
-        this.schedulerImagens = Executors.newScheduledThreadPool(1);
+        this.scheduler = Executors.newScheduledThreadPool(10);
+        this.schedulerEventos = Executors.newScheduledThreadPool(5);
+        this.schedulerImagens = Executors.newScheduledThreadPool(5);
     }
-    
+
     public void carregarConfiguracao(String arquivo) {
         try {
             configuracao.carregarDeArquivo(arquivo);
@@ -36,104 +40,140 @@ public class Controladora {
                 throw new IllegalArgumentException("Configuração inválida");
             }
             System.out.println("Configuração carregada com sucesso de: " + arquivo);
-            
+
             if (configuracao.isModoDebug()) {
                 System.out.println("Modo debug ativado");
                 System.out.println("Configuração: " + configuracao.getConfig());
             }
-            
+
         } catch (Exception e) {
             System.out.println("Erro ao carregar configuração, usando valores padrão");
             System.out.println("Erro: " + e.getMessage());
         }
     }
-    
+
     public void iniciarSimulacao() {
         if (simulacaoAtiva) {
             System.out.println("Simulação já está ativa");
             return;
         }
-        
-        hidrometro = new Hidrometro(configuracao.getConfig());
-        hidrometro.iniciar();
+
+        // Limpar hidrômetros e frames anteriores
+        hidrometros.clear();
+        frames.clear();
+
+        // Criar hidrômetros baseados na configuração
+        List<ConfiguracaoDTO> configs = configuracao.getConfiguracoes();
+
+        for (int i = 0; i < configs.size(); i++) {
+            ConfiguracaoDTO config = configs.get(i);
+            Hidrometro h = new Hidrometro(config);
+            h.iniciar();
+            hidrometros.add(h);
+
+            // Criar uma janela individual para cada hidrômetro
+            JFrame frame = new JFrame("Simulador " + config.id() + " - " +
+                    LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")));
+
+            // Configurar janela
+            frame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE); // Não fechar toda aplicação
+            frame.add(h.getDisplay());
+            frame.pack();
+
+            // Posicionar janelas em cascade (uma ao lado da outra)
+            int offset = i * 50;
+            frame.setLocation(100 + offset, 100 + offset);
+            frame.setVisible(true);
+
+            frames.add(frame);
+        }
+
         simulacaoAtiva = true;
-        
-        frame = new JFrame("Simulador de Hidrômetro " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")));
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.add(hidrometro.getDisplay());
-        frame.pack();
-        frame.setLocationRelativeTo(null);
-        frame.setVisible(true);
-        
-        System.out.println("Simulação iniciada");
-        
+
+        System.out.println("Simulação iniciada com " + hidrometros.size() + " hidrômetros em janelas separadas");
+
         iniciarThreadsSimulacao();
     }
-    
+
     private void iniciarThreadsSimulacao() {
-        scheduler.scheduleAtFixedRate(() -> {
-            if (simulacaoAtiva) {
-                try {
-                    System.out.println("Atualizando medições a cada 1s");
-                    double medicao = hidrometro.medir();
-                    double pressao = hidrometro.calcularPressao();
-                    
-                    if (configuracao.isModoDebug()) {
-                        System.out.printf("[DEBUG] Medição: %.2f L/min | Pressão: %.2f bar%n", 
-                                        medicao, pressao);
+        // Thread de medição para cada hidrômetro
+        for (int i = 0; i < hidrometros.size(); i++) {
+            final int index = i;
+            scheduler.scheduleAtFixedRate(() -> {
+                if (simulacaoAtiva && index < hidrometros.size()) {
+                    try {
+                        Hidrometro h = hidrometros.get(index);
+                        System.out.println("Atualizando medições do " + h.getConfig().id() + " a cada 1s");
+                        double medicao = h.medir();
+                        double pressao = h.calcularPressao();
+
+                        if (h.getConfig().modoDebug()) {
+                            System.out.printf("[DEBUG %s] Medição: %.2f L/min | Pressão: %.2f bar%n",
+                                    h.getConfig().id(), medicao, pressao);
+                        }
+
+                    } catch (Exception e) {
+                        System.err.println("Erro na medição do hidrômetro " + index + ": " + e.getMessage());
                     }
-                    
-                } catch (Exception e) {
-                    System.err.println("Erro na medição: " + e.getMessage());
                 }
-            }
-        }, 0, 1, TimeUnit.SECONDS);
-        
-        scheduler.scheduleAtFixedRate(() -> {
-            if (simulacaoAtiva && hidrometro != null) {
-                System.out.println("Mostrando Display!");
-                SwingUtilities.invokeLater(() -> {
-                    hidrometro.getDisplay().atualizarDados();
-                    // Atualizar título da janela com timestamp atual
-                    if (frame != null) {
-                        frame.setTitle("Simulador de Hidrômetro " + 
-                                     LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")));
+            }, 0, 1, TimeUnit.SECONDS);
+        }
+
+        // Thread de atualização do display para cada hidrômetro
+        for (int i = 0; i < hidrometros.size(); i++) {
+            final int index = i;
+            scheduler.scheduleAtFixedRate(() -> {
+                if (simulacaoAtiva && index < hidrometros.size()) {
+                    Hidrometro h = hidrometros.get(index);
+                    System.out.println("Mostrando Display do " + h.getConfig().id() + "!");
+                    SwingUtilities.invokeLater(() -> {
+                        h.getDisplay().atualizarDados();
+
+                    });
+                }
+            }, 0, configuracao.getTempoAtualizacao() / 1000, TimeUnit.SECONDS);
+        }
+
+        // Thread de eventos para cada hidrômetro
+        for (int i = 0; i < hidrometros.size(); i++) {
+            final int index = i;
+            schedulerEventos.scheduleAtFixedRate(() -> {
+                if (simulacaoAtiva && index < hidrometros.size()) {
+                    Hidrometro h = hidrometros.get(index);
+                    // Simular falta de água baseado na configuração específica
+                    if (Math.random() * 100 < h.getConfig().chanceFaltaAgua()) {
+                        System.out.println("⚠️ Simulando falta de água no " + h.getConfig().id() + "...");
+                        h.simularFaltaAgua();
                     }
-                });
-            }
-        }, 0, configuracao.getTempoAtualizacao() / 1000, TimeUnit.SECONDS);
-        
-        // Thread de eventos (falta de água, variações)
-        schedulerEventos.scheduleAtFixedRate(() -> {
-            if (simulacaoAtiva) {
-                // Simular falta de água baseado na configuração
-                if (Math.random() * 100 < configuracao.getChanceFaltaAgua()) {
-                    System.out.println("⚠️ Simulando falta de água...");
-                    hidrometro.simularFaltaAgua();
                 }
-            }
-        }, 2, 5, TimeUnit.SECONDS);
-        
-        schedulerImagens.scheduleAtFixedRate(() -> {
-            if (simulacaoAtiva && hidrometro != null) {
-                try {
-                    System.out.println("📸 Gerando imagem do hidrômetro...");
-                    hidrometro.gerarImagemAtualizada();
-                } catch (Exception e) {
-                    System.err.println("Erro ao gerar imagem: " + e.getMessage());
+            }, 2, 5, TimeUnit.SECONDS);
+        }
+
+        // Thread de geração de imagens para cada hidrômetro
+        for (int i = 0; i < hidrometros.size(); i++) {
+            final int index = i;
+            schedulerImagens.scheduleAtFixedRate(() -> {
+                if (simulacaoAtiva && index < hidrometros.size()) {
+                    try {
+                        Hidrometro h = hidrometros.get(index);
+                        System.out.println("📸 Gerando imagem do " + h.getConfig().id() + "...");
+                        h.gerarImagemAtualizada();
+                    } catch (Exception e) {
+                        System.err.println("Erro ao gerar imagem do hidrômetro " + index + ": " + e.getMessage());
+                    }
                 }
-            }
-        }, 3, 3, TimeUnit.SECONDS);
+            }, 3, 3, TimeUnit.SECONDS);
+        }
     }
-    
+
     public void pararSimulacao() {
         if (!simulacaoAtiva) {
             System.out.println("Simulação não está ativa");
             return;
         }
-        
+
         simulacaoAtiva = false;
-        
+
         if (scheduler != null && !scheduler.isShutdown()) {
             scheduler.shutdown();
         }
@@ -143,46 +183,55 @@ public class Controladora {
         if (schedulerImagens != null && !schedulerImagens.isShutdown()) {
             schedulerImagens.shutdown();
         }
-        
-        if (hidrometro != null) {
-            hidrometro.parar();
+
+        // Parar todos os hidrômetros
+        for (Hidrometro h : hidrometros) {
+            h.parar();
         }
-        
-        if (frame != null) {
+
+        // Atualizar títulos de todas as janelas
+        for (int i = 0; i < frames.size() && i < hidrometros.size(); i++) {
+            final int index = i;
             SwingUtilities.invokeLater(() -> {
-                frame.setTitle("Simulador de Hidrômetro " + 
-                             LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")) + 
-                             " - Simulação Encerrada");
+                JFrame frameHidrometro = frames.get(index);
+                Hidrometro h = hidrometros.get(index);
+                frameHidrometro.setTitle("Simulador " + h.getConfig().id() + " - " +
+                        LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")) +
+                        " - Simulação Encerrada");
             });
         }
-        
-        System.out.println("Simulação parada");
+
+        System.out.println("Simulação parada para " + hidrometros.size() + " hidrômetros");
     }
-    
+
     public void executar() {
         try {
             iniciarSimulacao();
-            
+
             int tempoSimulacao = configuracao.getTempoSimulacao();
-            
+
             if (tempoSimulacao > 0) {
                 System.out.println("Executando simulação por " + tempoSimulacao + " segundos...");
-                
+
                 scheduler.schedule(() -> {
                     System.out.println("Encerrando simulação...");
                     pararSimulacao();
-                    
+
                     if (!scheduler.isTerminated()) {
-                        SwingUtilities.invokeLater(() -> {
-                            if (frame != null) {
-                                frame.setTitle("Simulador de Hidrômetro " + 
-                                             LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")) + 
-                                             " - Simulação Encerrada");
-                            }
-                        });
+                        // Atualizar títulos de todas as janelas para indicar fim da simulação
+                        for (int i = 0; i < frames.size() && i < hidrometros.size(); i++) {
+                            final int index = i;
+                            SwingUtilities.invokeLater(() -> {
+                                JFrame frameHidrometro = frames.get(index);
+                                Hidrometro h = hidrometros.get(index);
+                                frameHidrometro.setTitle("Simulador " + h.getConfig().id() + " - " +
+                                        LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")) +
+                                        " - Simulação Encerrada");
+                            });
+                        }
                     }
                 }, tempoSimulacao, TimeUnit.SECONDS);
-                
+
                 // Manter thread principal viva
                 while (simulacaoAtiva) {
                     Thread.sleep(1000);
@@ -194,22 +243,29 @@ public class Controladora {
                     Thread.sleep(1000);
                 }
             }
-            
+
         } catch (InterruptedException e) {
             System.out.println("Simulação interrompida");
             pararSimulacao();
         } catch (IllegalArgumentException ignored) {
             // Ignorar exceções de argumentos inválidos como no simulador de referência
         }
-        
+
         System.out.println("Simulação concluída");
     }
-    
+
     public boolean isSimulacaoAtiva() {
         return simulacaoAtiva;
     }
-    
-    public Hidrometro getHidrometro() {
-        return hidrometro;
+
+    public List<Hidrometro> getHidrometros() {
+        return new ArrayList<>(hidrometros);
+    }
+
+    public Hidrometro getHidrometro(int indice) {
+        if (indice < 0 || indice >= hidrometros.size()) {
+            throw new IndexOutOfBoundsException("Índice inválido: " + indice);
+        }
+        return hidrometros.get(indice);
     }
 }

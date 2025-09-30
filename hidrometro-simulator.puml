@@ -1,9 +1,16 @@
-@startuml Simulador de Hidrômetro
+@startuml Simulador de Múltiplos Hidrômetros
 
 ' ==============================================
-' Diagrama de Classes - SHA 2.0
+' Diagrama de Classes - Múltiplos Hidrômetros v3.0
 ' Ferramenta utilizada: PlantUML
 ' Site usado para gerar o diagrama: https://www.plantuml.com/plantuml
+'
+' PRINCIPAIS MUDANÇAS:
+' - Controladora gerencia MÚLTIPLOS hidrômetros (1-5)
+' - ConfiguracaoDTO possui ID único para cada hidrômetro
+' - Configuracao gerencia lista de configurações
+' - Cada hidrômetro abre em janela separada
+' - Threads independentes para cada hidrômetro
 '
 ' Como visualizar:
 ' 1. Copie todo o conteúdo deste arquivo (.puml).
@@ -26,13 +33,21 @@ class Main {
 }
 class Controladora {
     - configuracao: Configuracao
-    - hidrometro: Hidrometro
+    - hidrometros: List<Hidrometro>
+    - frames: List<JFrame>
     - simulacaoAtiva: boolean
+    - scheduler: ScheduledExecutorService
+    - schedulerEventos: ScheduledExecutorService
+    - schedulerImagens: ScheduledExecutorService
+    --
     + Controladora()
     + carregarConfiguracao(arquivo: String): void
     + iniciarSimulacao(): void
     + pararSimulacao(): void
     + executar(): void
+    + getHidrometros(): List<Hidrometro>
+    + getHidrometro(indice: int): Hidrometro
+    - iniciarThreadsSimulacao(): void
 }
 Main --> Controladora : chama
 
@@ -113,9 +128,17 @@ class Display {
 }
 
 class Configuracao {
-    - config: ConfiguracaoDTO
+    - configuracoes: List<ConfiguracaoDTO>
+    - numeroHidrometros: int
+    --
     + Configuracao()
     + carregarDeArquivo(arquivo: String): void
+    + validarConfiguracao(): boolean
+    + getConfiguracoes(): List<ConfiguracaoDTO>
+    + getConfiguracao(indice: int): ConfiguracaoDTO
+    + getNumeroHidrometros(): int
+    --
+    ' Métodos para compatibilidade (usam primeiro hidrômetro)
     + getConfig(): ConfiguracaoDTO
     + getVazaoEntrada(): double
     + getVazaoSaida(): double
@@ -127,10 +150,13 @@ class Configuracao {
     + getPrecisaoMedidor(): double
     + getTipoFluido(): TipoFluido
     + isModoDebug(): boolean
+    --
+    - criarArquivoConfiguracao(arquivo: String): void
 }
 
-' ===== NOVO: ConfiguracaoDTO =====
+' ===== ConfiguracaoDTO com ID único =====
 class ConfiguracaoDTO {
+    - id: String
     - vazaoEntrada: double
     - vazaoSaida: double
     - diametroEntrada: double
@@ -141,7 +167,10 @@ class ConfiguracaoDTO {
     - precisaoMedidor: double
     - tipoFluido: TipoFluido
     - modoDebug: boolean
+    --
     + ConfiguracaoDTO()
+    + ConfiguracaoDTO(id: String, ...parâmetros)
+    + id(): String
     + vazaoEntrada(): double
     + vazaoSaida(): double
     + diametroEntrada(): double
@@ -193,17 +222,46 @@ class TipoFluido {
     + toString(): String
 }
 
-' ===== Relacionamentos =====
-Controladora *-- Hidrometro : possui
-Controladora o-- Configuracao : usa
+' ===== Relacionamentos Principais =====
+Main --> Controladora : chama
+Controladora "1" *-- "1-5" Hidrometro : gerencia múltiplos
+Controladora "1" o-- "1" Configuracao : usa
+Controladora "1" *-- "1-5" JFrame : janelas separadas
+
+' ===== Componentes do Hidrômetro =====
 Hidrometro *-- Entrada : possui
 Hidrometro *-- Saida : possui
 Hidrometro *-- Medidor : possui
 Hidrometro *-- Display : possui
-' Hidrometro usa ConfiguracaoDTO internamente
-Hidrometro o-- ConfiguracaoDTO : usa
-' Configuracao contém/expõe ConfiguracaoDTO
-Configuracao o-- ConfiguracaoDTO : usa
-GeradorImagem ..> DadosHidrometro : recebe
+Hidrometro o-- ConfiguracaoDTO : usa configuração específica
+Hidrometro ..> GeradorImagem : gera imagens
+
+' ===== Configurações =====
+Configuracao "1" o-- "1-5" ConfiguracaoDTO : gerencia múltiplas
+ConfiguracaoDTO ..> TipoFluido : usa enum
+
+' ===== Utilitários =====
+GeradorImagem ..> DadosHidrometro : recebe dados
+Display ..> Hidrometro : exibe dados
+
+' ===== Notas importantes =====
+note right of Controladora
+  **MÚLTIPLOS HIDRÔMETROS v3.0**
+  • Gerencia 1-5 hidrômetros simultaneamente
+  • Cada hidrômetro em janela separada
+  • Threads independentes por hidrômetro
+  • Configurações individuais por hidrômetro
+end note
+
+note right of ConfiguracaoDTO
+  **ID ÚNICO**
+  Cada hidrômetro tem 
+  identificador único:
+  • HIDROMETRO_1
+  • HIDROMETRO_2
+  • HIDROMETRO_3
+  • HIDROMETRO_4
+  • HIDROMETRO_5
+end note
 
 @enduml

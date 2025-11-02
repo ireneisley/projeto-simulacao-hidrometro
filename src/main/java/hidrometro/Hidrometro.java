@@ -16,17 +16,21 @@ public class Hidrometro {
     private GeradorImagem geradorImagem; // Adicionado gerador de imagem como atributo da classe
     
     public Hidrometro() {
-        this(new ConfiguracaoDTO());
+        this(new ConfiguracaoDTO(), 800, 600, "./imagens_hidrometros", "PNG");
     }
     
     public Hidrometro(ConfiguracaoDTO config) {
+        this(config, 800, 600, "./imagens_hidrometros", "PNG");
+    }
+    
+    public Hidrometro(ConfiguracaoDTO config, int largura, int altura, String diretorio, String formato) {
         this.config = config;
         
         this.entrada = new Entrada(config.vazaoEntrada(), config.diametroEntrada());
         this.saida = new Saida(config.vazaoSaida(), config.diametroSaida());
         this.display = new Display();
         this.medidor = new Medidor(config.precisaoMedidor());
-        this.geradorImagem = new GeradorImagem(); // Inicializa o gerador de imagem
+        this.geradorImagem = new GeradorImagem(largura, altura, diretorio, formato, config.id());
         this.pressaoAtual = 0.0;
         this.volumeTotal = 0.0;
         this.funcionando = false;
@@ -73,26 +77,81 @@ public class Hidrometro {
     
     public void gerarImagemAtualizada() {
         if (!funcionando) {
-            System.out.println("Hidrômetro não está funcionando - não é possível gerar imagem");
+            if (config.modoDebug()) {
+                System.out.println("Hidrômetro " + config.id() + " não está funcionando - não é possível gerar imagem");
+            }
             return;
         }
         
-        // Criar dados atuais do hidrômetro
-        DadosHidrometro dados = new DadosHidrometro(
-            medidor.calcularVazao(),
-            volumeTotal,
-            pressaoAtual
-        );
+        // Capturar a imagem diretamente do Display
+        java.awt.image.BufferedImage imagem = capturarImagemDisplay();
         
-        // Gerar imagem com a base do hidrômetro real
-        java.awt.image.BufferedImage imagem = geradorImagem.criarImagemHidrometro(dados);
-        
-        // Salvar com timestamp para identificação única
-        String nomeArquivo = String.format("hidrometro_%d", System.currentTimeMillis());
-        geradorImagem.salvarImagemJPEG(imagem, nomeArquivo);
-        
-        System.out.printf("📸 Imagem gerada: %s.jpg | Vazão: %.2f L/min | Volume: %.3f L | Pressão: %.2f bar%n",
-                         nomeArquivo, medidor.calcularVazao(), volumeTotal, pressaoAtual);
+        if (imagem != null) {
+            // Salvar com nome fixo (será substituído a cada vez)
+            String nomeArquivo = "atual";  // Nome fixo para substituir
+            geradorImagem.salvarImagem(imagem, nomeArquivo);
+            
+        } else {
+            System.err.println("[" + config.id() + "] Falha ao capturar imagem do display");
+        }
+    }
+    
+    /**
+     * Captura a imagem atual do display visual
+     */
+    private java.awt.image.BufferedImage capturarImagemDisplay() {
+        try {
+            // Obter o tamanho do painel Display
+            int width = display.getWidth();
+            int height = display.getHeight();
+            
+            if (width <= 0 || height <= 0) {
+                // Display ainda não foi renderizado, usar tamanho padrão
+                width = 800;
+                height = 600;
+            }
+            
+            // Garantir que o display seja atualizado antes de capturar
+            final int finalWidth = width;
+            final int finalHeight = height;
+            final java.awt.image.BufferedImage[] imagemCapturada = new java.awt.image.BufferedImage[1];
+            
+            // Executar na thread do EDT para garantir renderização correta
+            javax.swing.SwingUtilities.invokeAndWait(() -> {
+                try {
+                    // Forçar atualização do display
+                    display.revalidate();
+                    display.repaint();
+                    
+                    // Aguardar um pouco para garantir renderização
+                    Thread.sleep(100);
+                    
+                    // Criar BufferedImage para capturar
+                    java.awt.image.BufferedImage imagem = new java.awt.image.BufferedImage(
+                        finalWidth, finalHeight, java.awt.image.BufferedImage.TYPE_INT_RGB
+                    );
+                    
+                    // Renderizar o Display na imagem
+                    java.awt.Graphics2D g2d = imagem.createGraphics();
+                    g2d.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, 
+                                        java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+                    display.paint(g2d);
+                    g2d.dispose();
+                    
+                    imagemCapturada[0] = imagem;
+                } catch (Exception e) {
+                    System.err.println("Erro ao renderizar display: " + e.getMessage());
+                }
+            });
+            
+            return imagemCapturada[0];
+        } catch (Exception e) {
+            System.err.println("Erro ao capturar imagem do display: " + e.getMessage());
+            if (config.modoDebug()) {
+                e.printStackTrace();
+            }
+            return null;
+        }
     }
     
     public void exibirImagem() {
@@ -148,5 +207,25 @@ public class Hidrometro {
     
     public ConfiguracaoDTO getConfig() {
         return config;
+    }
+    
+    /**
+     * Modifica a vazão de entrada do hidrômetro
+     * @param novaVazao Nova vazão em L/min
+     */
+    public void setVazaoEntrada(double novaVazao) {
+        if (entrada != null) {
+            entrada.setVazaoEntrada(novaVazao);
+        }
+    }
+    
+    /**
+     * Modifica a vazão de saída do hidrômetro
+     * @param novaVazao Nova vazão em L/min
+     */
+    public void setVazaoSaida(double novaVazao) {
+        if (saida != null) {
+            saida.setVazaoSaida(novaVazao);
+        }
     }
 }

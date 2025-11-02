@@ -34,11 +34,13 @@ public class Display extends JPanel {
     private void inicializarInterface() {
         frame = new JFrame("Simulador de Hidrômetro");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(600, 500);
+        frame.setSize(800, 600);  // Tamanho maior e fixo
+        frame.setMinimumSize(new Dimension(800, 600));  // Define tamanho mínimo
         frame.setLocationRelativeTo(null);
 
         setLayout(new BorderLayout());
         setBackground(Color.WHITE);
+        setPreferredSize(new Dimension(800, 600));  // Define tamanho preferido do painel
 
         // Painel de informações
         JPanel painelInfo = new JPanel(new GridLayout(4, 1, 25, 30));

@@ -67,7 +67,13 @@ public class Controladora {
 
         for (int i = 0; i < configs.size(); i++) {
             ConfiguracaoDTO config = configs.get(i);
-            Hidrometro h = new Hidrometro(config);
+            Hidrometro h = new Hidrometro(
+                config,
+                configuracao.getImagemLargura(),
+                configuracao.getImagemAltura(),
+                configuracao.getImagemDiretorio(),
+                configuracao.getImagemFormato()
+            );
             h.iniciar();
             hidrometros.add(h);
 
@@ -122,6 +128,7 @@ public class Controladora {
         // Thread de atualização do display para cada hidrômetro
         for (int i = 0; i < hidrometros.size(); i++) {
             final int index = i;
+            long intervaloDisplay = Math.max(1, configuracao.getTempoAtualizacao() / 1000);  // Mínimo 1 segundo
             scheduler.scheduleAtFixedRate(() -> {
                 if (simulacaoAtiva && index < hidrometros.size()) {
                     Hidrometro h = hidrometros.get(index);
@@ -131,7 +138,7 @@ public class Controladora {
 
                     });
                 }
-            }, 0, configuracao.getTempoAtualizacao() / 1000, TimeUnit.SECONDS);
+            }, 0, intervaloDisplay, TimeUnit.SECONDS);
         }
 
         // Thread de eventos para cada hidrômetro
@@ -142,27 +149,36 @@ public class Controladora {
                     Hidrometro h = hidrometros.get(index);
                     // Simular falta de água baseado na configuração específica
                     if (Math.random() * 100 < h.getConfig().chanceFaltaAgua()) {
-                        System.out.println("⚠️ Simulando falta de água no " + h.getConfig().id() + "...");
+                        System.out.println("Simulando falta de água no " + h.getConfig().id() + "...");
                         h.simularFaltaAgua();
                     }
                 }
             }, 2, 5, TimeUnit.SECONDS);
         }
 
-        // Thread de geração de imagens para cada hidrômetro
-        for (int i = 0; i < hidrometros.size(); i++) {
-            final int index = i;
-            schedulerImagens.scheduleAtFixedRate(() -> {
-                if (simulacaoAtiva && index < hidrometros.size()) {
-                    try {
-                        Hidrometro h = hidrometros.get(index);
-                        System.out.println("📸 Gerando imagem do " + h.getConfig().id() + "...");
-                        h.gerarImagemAtualizada();
-                    } catch (Exception e) {
-                        System.err.println("Erro ao gerar imagem do hidrômetro " + index + ": " + e.getMessage());
+        // Thread de geração de imagens para cada hidrômetro (se habilitado)
+        if (configuracao.isGerarImagens()) {
+            int intervaloImagens = configuracao.getImagemIntervaloSegundos();
+
+            for (int i = 0; i < hidrometros.size(); i++) {
+                final int index = i;
+                schedulerImagens.scheduleAtFixedRate(() -> {
+                    if (simulacaoAtiva && index < hidrometros.size()) {
+                        try {
+                            Hidrometro h = hidrometros.get(index);
+                            // System.out.println("Gerando imagem do " + h.getConfig().id() + "...");
+                            h.gerarImagemAtualizada();
+                        } catch (Exception e) {
+                            System.err.println("Erro ao gerar imagem do hidrômetro " + index + ": " + e.getMessage());
+                            if (configuracao.isModoDebug()) {
+                                e.printStackTrace();
+                            }
+                        }
                     }
-                }
-            }, 3, 3, TimeUnit.SECONDS);
+                }, 3, intervaloImagens, TimeUnit.SECONDS);  // Delay inicial de 3 segundos
+            }
+        } else {
+            System.out.println("Geração de imagens desabilitada");
         }
     }
 
@@ -247,8 +263,12 @@ public class Controladora {
         } catch (InterruptedException e) {
             System.out.println("Simulação interrompida");
             pararSimulacao();
-        } catch (IllegalArgumentException ignored) {
-            // Ignorar exceções de argumentos inválidos como no simulador de referência
+        } catch (IllegalArgumentException e) {
+            System.err.println("ERRO: Argumento ilegal capturado - " + e.getMessage());
+            e.printStackTrace();
+        } catch (Exception e) {
+            System.err.println("ERRO inesperado: " + e.getMessage());
+            e.printStackTrace();
         }
 
         System.out.println("Simulação concluída");

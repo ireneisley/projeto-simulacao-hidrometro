@@ -9,12 +9,28 @@ import java.util.*;
 public class Configuracao {
     private List<ConfiguracaoDTO> configuracoes;
     private int numeroHidrometros;
+    
+    // Configurações de geração de imagens
+    private boolean gerarImagens;
+    private int imagemIntervaloSegundos;
+    private String imagemDiretorio;
+    private int imagemLargura;
+    private int imagemAltura;
+    private String imagemFormato;
 
     public Configuracao() {
         this.configuracoes = new ArrayList<>();
         this.numeroHidrometros = 1;
         // Adicionar configuração padrão para um hidrômetro
         this.configuracoes.add(new ConfiguracaoDTO());
+        
+        // Valores padrão para geração de imagens
+        this.gerarImagens = true;
+        this.imagemIntervaloSegundos = 5;
+        this.imagemDiretorio = "./imagens_hidrometros";
+        this.imagemLargura = 800;
+        this.imagemAltura = 600;
+        this.imagemFormato = "PNG";
     }
 
     public void carregarDeArquivo(String arquivo) throws IOException {
@@ -30,6 +46,14 @@ public class Configuracao {
             if (numeroHidrometros < 1 || numeroHidrometros > 5) {
                 numeroHidrometros = 1;
             }
+            
+            // Carregar configurações de geração de imagens
+            gerarImagens = Boolean.parseBoolean(props.getProperty("gerar.imagens", "true"));
+            imagemIntervaloSegundos = Integer.parseInt(props.getProperty("imagem.intervalo.segundos", "5"));
+            imagemDiretorio = props.getProperty("imagem.diretorio", "./imagens_hidrometros");
+            imagemLargura = Integer.parseInt(props.getProperty("imagem.largura", "800"));
+            imagemAltura = Integer.parseInt(props.getProperty("imagem.altura", "600"));
+            imagemFormato = props.getProperty("imagem.formato", "PNG").toUpperCase();
 
             configuracoes.clear();
 
@@ -158,5 +182,30 @@ public class Configuracao {
 
     public boolean isModoDebug() {
         return getConfig().modoDebug();
+    }
+    
+    // Getters para configurações de imagem
+    public boolean isGerarImagens() {
+        return gerarImagens;
+    }
+    
+    public int getImagemIntervaloSegundos() {
+        return imagemIntervaloSegundos;
+    }
+    
+    public String getImagemDiretorio() {
+        return imagemDiretorio;
+    }
+    
+    public int getImagemLargura() {
+        return imagemLargura;
+    }
+    
+    public int getImagemAltura() {
+        return imagemAltura;
+    }
+    
+    public String getImagemFormato() {
+        return imagemFormato;
     }
 }

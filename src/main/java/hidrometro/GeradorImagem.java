@@ -20,13 +20,34 @@ public class GeradorImagem {
     private int contadorImagens;
     private float qualidadeJpeg;
     private BufferedImage imagemBase; // Adicionada imagem base do hidrômetro real
+    private String diretorio;
+    private String formato;
+    private String idHidrometro;
 
     public GeradorImagem() {
-        this.largura = 800;
-        this.altura = 600;
+        this(800, 600, "./imagens_hidrometros", "PNG", "HIDROMETRO");
+    }
+    
+    public GeradorImagem(int largura, int altura, String diretorio, String formato, String idHidrometro) {
+        this.largura = largura;
+        this.altura = altura;
         this.contadorImagens = 0;
         this.qualidadeJpeg = 0.9f;
+        this.diretorio = diretorio;
+        this.formato = formato;
+        this.idHidrometro = idHidrometro;
+        criarDiretorio();
         carregarImagemBase(); // Carrega a imagem real do hidrômetro
+    }
+    
+    private void criarDiretorio() {
+        File dir = new File(diretorio);
+        if (!dir.exists()) {
+            boolean created = dir.mkdirs();
+            if (created) {
+                System.out.println("Diretório criado: " + diretorio);
+            }
+        }
     }
 
     private void carregarImagemBase() {
@@ -189,7 +210,12 @@ public class GeradorImagem {
     }
 
     public void salvarImagem(BufferedImage imagem, String nome) {
-        salvarImagemJPEG(imagem, nome);
+        String caminhoCompleto = diretorio + File.separator + idHidrometro + "_" + nome;
+        if (formato.equalsIgnoreCase("JPEG") || formato.equalsIgnoreCase("JPG")) {
+            salvarImagemJPEG(imagem, caminhoCompleto);
+        } else {
+            salvarImagemPNG(imagem, caminhoCompleto);
+        }
     }
 
     public void salvarImagemJPEG(BufferedImage imagem, String nome) {
@@ -231,6 +257,7 @@ public class GeradorImagem {
             ImageIO.write(imagem, "png", arquivo);
         } catch (IOException e) {
             System.err.println("Erro ao salvar imagem PNG: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 

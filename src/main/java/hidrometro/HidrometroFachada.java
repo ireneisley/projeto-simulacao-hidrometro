@@ -191,7 +191,7 @@ public class HidrometroFachada {
             return id;
             
         } catch (Exception e) {
-            System.err.println("✗ Erro ao criar SHA: " + e.getMessage());
+            System.err.println("Erro ao criar SHA: " + e.getMessage());
             e.printStackTrace();
             return null;
         }
@@ -207,7 +207,7 @@ public class HidrometroFachada {
         System.out.println("\n=== Finalizando SHA: " + id + " ===");
         
         if (!hidrometrosAtivos.containsKey(id)) {
-            System.err.println("✗ SHA " + id + " não encontrado");
+            System.err.println("SHA " + id + " não encontrado");
             return false;
         }
         
@@ -225,11 +225,11 @@ public class HidrometroFachada {
             
             hidrometrosAtivos.remove(id);
             
-            System.out.println("✓ SHA " + id + " finalizado com sucesso");
+            System.out.println("SHA " + id + " finalizado com sucesso");
             return true;
             
         } catch (Exception e) {
-            System.err.println("✗ Erro ao finalizar SHA: " + e.getMessage());
+            System.err.println("Erro ao finalizar SHA: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
@@ -247,7 +247,7 @@ public class HidrometroFachada {
         System.out.println("\n=== Modificando Vazão do SHA: " + id + " ===");
         
         if (!hidrometrosAtivos.containsKey(id)) {
-            System.err.println("✗ SHA " + id + " não encontrado");
+            System.err.println("SHA " + id + " não encontrado");
             return false;
         }
         
@@ -265,12 +265,12 @@ public class HidrometroFachada {
                 System.out.println("  - Nova vazão saída: " + novaVazaoSaida + " L/min");
             }
             
-            System.out.println("✓ Parâmetros de vazão atualizados com sucesso!");
+            System.out.println("Parâmetros de vazão atualizados com sucesso!");
             
             return true;
             
         } catch (Exception e) {
-            System.err.println("✗ Erro ao modificar vazão: " + e.getMessage());
+            System.err.println("Erro ao modificar vazão: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
@@ -289,7 +289,7 @@ public class HidrometroFachada {
                           " Geração de Imagens do SHA: " + id + " ===");
         
         if (!hidrometrosAtivos.containsKey(id)) {
-            System.err.println("✗ SHA " + id + " não encontrado");
+            System.err.println("SHA " + id + " não encontrado");
             return false;
         }
         
@@ -326,13 +326,13 @@ public class HidrometroFachada {
                     schedulersImagens.remove(id);
                 }
                 
-                System.out.println("✓ Geração de imagens DESABILITADA");
+                System.out.println("Geração de imagens DESABILITADA");
             }
             
             return true;
             
         } catch (Exception e) {
-            System.err.println("✗ Erro ao alterar geração de imagens: " + e.getMessage());
+            System.err.println("Erro ao alterar geração de imagens: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
@@ -444,7 +444,7 @@ public class HidrometroFachada {
         }
         
         sistemaAtivo = false;
-        System.out.println("✓ Sistema SHA finalizado completamente");
+        System.out.println("Sistema SHA finalizado completamente");
     }
     
     /**

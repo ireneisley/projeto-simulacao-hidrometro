@@ -101,8 +101,6 @@ public class ClienteCLI {
         System.out.println(SEPARADOR);
     }
     
-    // ==================== Funcionalidade 1: Configurar Simulador ====================
-    
     private static void configurarSimulador(Scanner scanner, HidrometroFachada fachada) {
         System.out.println(SEPARADOR);
         System.out.println("  CONFIGURAR SIMULADOR SHA");
@@ -133,8 +131,6 @@ public class ClienteCLI {
         
         fachada.configSimuladorSHA(intervalo, gerar, intervaloImg, diretorio, 800, 600, "PNG");
     }
-    
-    // ==================== Funcionalidade 2: Criar SHA ====================
     
     private static void criarSHA(Scanner scanner, HidrometroFachada fachada) {
         System.out.println(SEPARADOR);
@@ -180,9 +176,7 @@ public class ClienteCLI {
             System.out.println("\nSHA criado com sucesso! ID: " + idCriado);
         }
     }
-    
-    // ==================== Funcionalidade 3: Finalizar SHA ====================
-    
+
     private static void finalizarSHA(Scanner scanner, HidrometroFachada fachada) {
         System.out.println(SEPARADOR);
         System.out.println("  FINALIZAR SHA");
@@ -210,9 +204,7 @@ public class ClienteCLI {
             System.out.println("Operação cancelada.");
         }
     }
-    
-    // ==================== Funcionalidade 4: Modificar Vazão ====================
-    
+
     private static void modificarVazaoSHA(Scanner scanner, HidrometroFachada fachada) {
         System.out.println(SEPARADOR);
         System.out.println("  MODIFICAR VAZÃO SHA");
@@ -241,8 +233,6 @@ public class ClienteCLI {
             System.out.println("\nVazão modificada!");
         }
     }
-    
-    // ==================== Funcionalidade 5: Habilitar Geração de Imagens ====================
     
     private static void habilitarGeracaoImagem(Scanner scanner, HidrometroFachada fachada) {
         System.out.println(SEPARADOR);

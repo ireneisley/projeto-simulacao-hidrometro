@@ -105,26 +105,32 @@ public class GeradorImagem {
     }
 
     private void desenharDisplayDigital(Graphics2D g2d, DadosHidrometro dados) {
+        // Calcula proporções baseadas nas dimensões configuradas
+        float escalaX = largura / 800.0f;
+        float escalaY = altura / 600.0f;
+        
         g2d.setColor(Color.BLACK);
-        g2d.setFont(new Font("Monospaced", Font.BOLD, 20)); // Fonte mais adequada e tamanho ajustado
+        int tamanhoFonte = (int)(20 * Math.min(escalaX, escalaY));
+        g2d.setFont(new Font("Monospaced", Font.BOLD, tamanhoFonte));
 
-        // Volume total em m³ - posicionado nas caixas do display
+        // Volume total em m³ - posicionado nas caixas do display (proporcionalmente)
         String volumeStr = String.format("%08.3f", dados.getVolume() / 1000.0);
 
-        int startX = 300; // Posição inicial das caixas (ajustada)
-        int startY = 280; // Altura das caixas (ajustada)
-        int boxWidth = 20; // Largura de cada caixa (ajustada)
+        int startX = (int)(300 * escalaX); // Posição inicial proporcional
+        int startY = (int)(280 * escalaY); // Altura proporcional
+        int boxWidth = (int)(20 * escalaX); // Largura proporcional
 
         // Desenha fundo branco nas caixas
         g2d.setColor(Color.WHITE);
-        g2d.fillRect(startX - 5, startY - 20, volumeStr.length() * boxWidth + 10, 30);
+        g2d.fillRect(startX - 5, startY - 20, volumeStr.length() * boxWidth + 10, (int)(30 * escalaY));
 
         // Desenha os dígitos
         g2d.setColor(Color.BLACK);
         for (int i = 0; i < volumeStr.length(); i++) {
             char digito = volumeStr.charAt(i);
             if (digito == '.') {
-                g2d.fillOval(startX + (i * boxWidth) + 8, startY - 3, 3, 3);
+                g2d.fillOval(startX + (i * boxWidth) + (int)(8 * escalaX), startY - 3, 
+                            (int)(3 * escalaX), (int)(3 * escalaY));
             } else {
                 g2d.drawString(String.valueOf(digito), startX + (i * boxWidth), startY);
             }
@@ -132,18 +138,21 @@ public class GeradorImagem {
     }
 
     private void desenharPonteirosReais(Graphics2D g2d, DadosHidrometro dados) {
+        // Calcula proporções baseadas nas dimensões configuradas
+        float escalaX = largura / 800.0f;
+        float escalaY = altura / 600.0f;
 
-        // Ponteiro esquerdo (vazão) - coordenadas do ponteiro real na imagem
-        int ponteiroEsqX = 320; // Ajustado para o centro do ponteiro esquerdo
-        int ponteiroEsqY = 420; // Ajustado para a altura correta
+        // Ponteiro esquerdo (vazão) - coordenadas proporcionais
+        int ponteiroEsqX = (int)(320 * escalaX);
+        int ponteiroEsqY = (int)(420 * escalaY);
         double valorVazao = (dados.getVazao() % 10.0) / 10.0; // Normaliza para 0-1
-        desenharPonteiroReal(g2d, ponteiroEsqX, ponteiroEsqY, valorVazao, Color.RED, 30); // Raio ajustado
+        desenharPonteiroReal(g2d, ponteiroEsqX, ponteiroEsqY, valorVazao, Color.RED, (int)(30 * Math.min(escalaX, escalaY)));
 
-        // Ponteiro direito (volume fracionário) - coordenadas do ponteiro real na imagem
-        int ponteiroDirX = 480; // Ajustado para o centro do ponteiro direito
-        int ponteiroDirY = 420; // Ajustado para a altura correta
+        // Ponteiro direito (volume fracionário) - coordenadas proporcionais
+        int ponteiroDirX = (int)(480 * escalaX);
+        int ponteiroDirY = (int)(420 * escalaY);
         double valorVolumeFrac = ((dados.getVolume() % 1000.0) / 1000.0); // Fração de m³
-        desenharPonteiroReal(g2d, ponteiroDirX, ponteiroDirY, valorVolumeFrac, Color.RED, 30); // Raio ajustado
+        desenharPonteiroReal(g2d, ponteiroDirX, ponteiroDirY, valorVolumeFrac, Color.RED, (int)(30 * Math.min(escalaX, escalaY)));
     }
 
     private void desenharPonteiroReal(Graphics2D g2d, int centerX, int centerY, double valor, Color cor, int raio) {
@@ -178,35 +187,63 @@ public class GeradorImagem {
     }
 
     private void desenharInformacoesAdicionais(Graphics2D g2d, DadosHidrometro dados) {
+        // Calcula proporções baseadas nas dimensões configuradas
+        float escalaX = largura / 800.0f;
+        float escalaY = altura / 600.0f;
 
-        // Painel de informações no canto superior esquerdo
+        // Painel de informações no canto superior esquerdo (proporcionalmente)
+        int painelX = (int)(10 * escalaX);
+        int painelY = (int)(10 * escalaY);
+        int painelLargura = (int)(200 * escalaX);
+        int painelAltura = (int)(120 * escalaY);
+        
         g2d.setColor(new Color(0, 0, 0, 180)); // Fundo semi-transparente
-        g2d.fillRoundRect(10, 10, 200, 120, 10, 10);
+        g2d.fillRoundRect(painelX, painelY, painelLargura, painelAltura, 10, 10);
 
         g2d.setColor(Color.WHITE);
-        g2d.setFont(new Font("Arial", Font.BOLD, 14));
-        g2d.drawString("DADOS DO MEDIDOR", 20, 30);
+        int fonteGrande = (int)(14 * Math.min(escalaX, escalaY));
+        int fontePequena = (int)(12 * Math.min(escalaX, escalaY));
+        
+        g2d.setFont(new Font("Arial", Font.BOLD, fonteGrande));
+        g2d.drawString("DADOS DO MEDIDOR", painelX + (int)(10 * escalaX), painelY + (int)(20 * escalaY));
 
-        g2d.setFont(new Font("Arial", Font.PLAIN, 12));
-        g2d.drawString(String.format("Vazão: %.2f L/min", dados.getVazao()), 20, 50);
-        g2d.drawString(String.format("Volume: %.3f m³", dados.getVolume() / 1000.0), 20, 70);
-        g2d.drawString(String.format("Pressão: %.2f bar", dados.getPressao()), 20, 90);
+        g2d.setFont(new Font("Arial", Font.PLAIN, fontePequena));
+        g2d.drawString(String.format("Vazão: %.2f L/min", dados.getVazao()), 
+                      painelX + (int)(10 * escalaX), painelY + (int)(40 * escalaY));
+        g2d.drawString(String.format("Volume: %.3f m³", dados.getVolume() / 1000.0), 
+                      painelX + (int)(10 * escalaX), painelY + (int)(60 * escalaY));
+        g2d.drawString(String.format("Pressão: %.2f bar", dados.getPressao()), 
+                      painelX + (int)(10 * escalaX), painelY + (int)(80 * escalaY));
 
         // Status de água com indicador visual maior
+        int indicadorX = painelX + (int)(10 * escalaX);
+        int indicadorY = painelY + (int)(90 * escalaY);
+        int indicadorTam = (int)(15 * Math.min(escalaX, escalaY));
+        
         g2d.setColor(dados.isStatusAgua() ? Color.GREEN : Color.RED);
-        g2d.fillOval(20, 100, 15, 15);
+        g2d.fillOval(indicadorX, indicadorY, indicadorTam, indicadorTam);
         g2d.setColor(Color.WHITE);
-        g2d.drawString(dados.isStatusAgua() ? "ÁGUA OK" : "SEM ÁGUA", 45, 112);
+        g2d.drawString(dados.isStatusAgua() ? "ÁGUA OK" : "SEM ÁGUA", 
+                      indicadorX + (int)(25 * escalaX), indicadorY + (int)(12 * escalaY));
 
-        // Timestamp no canto inferior direito
+        // Timestamp no canto inferior direito (proporcionalmente)
+        int timestampX = (int)(580 * escalaX);
+        int timestampY = (int)(520 * escalaY);
+        int timestampLargura = (int)(210 * escalaX);
+        int timestampAltura = (int)(70 * escalaY);
+        
         g2d.setColor(new Color(0, 0, 0, 120));
-        g2d.fillRoundRect(580, 520, 210, 70, 8, 8);
+        g2d.fillRoundRect(timestampX, timestampY, timestampLargura, timestampAltura, 8, 8);
 
         g2d.setColor(Color.WHITE);
-        g2d.setFont(new Font("Arial", Font.PLAIN, 10));
-        g2d.drawString("Imagem #" + contadorImagens, 590, 540);
-        g2d.drawString(new java.util.Date().toString(), 590, 555);
-        g2d.drawString(String.format("Timestamp: %d", dados.getTimestamp()), 590, 570);
+        int fonteMini = (int)(10 * Math.min(escalaX, escalaY));
+        g2d.setFont(new Font("Arial", Font.PLAIN, fonteMini));
+        g2d.drawString("Imagem #" + contadorImagens, 
+                      timestampX + (int)(10 * escalaX), timestampY + (int)(20 * escalaY));
+        g2d.drawString(new java.util.Date().toString(), 
+                      timestampX + (int)(10 * escalaX), timestampY + (int)(35 * escalaY));
+        g2d.drawString(String.format("Timestamp: %d", dados.getTimestamp()), 
+                      timestampX + (int)(10 * escalaX), timestampY + (int)(50 * escalaY));
     }
 
     public void salvarImagem(BufferedImage imagem, String nome) {

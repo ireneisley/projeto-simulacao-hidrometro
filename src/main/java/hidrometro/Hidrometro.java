@@ -83,58 +83,57 @@ public class Hidrometro {
             return;
         }
         
-        // Capturar a imagem diretamente do Display
+        // Garantir que o display está atualizado antes de capturar
+        display.atualizarDisplay(
+            entrada.getFluxoAtual(),
+            volumeTotal,
+            calcularPressao()
+        );
+        
+        // Capturar imagem do display (funciona mesmo se a janela não estiver visível)
         java.awt.image.BufferedImage imagem = capturarImagemDisplay();
         
         if (imagem != null) {
             // Salvar com nome fixo (será substituído a cada vez)
             String nomeArquivo = "atual";  // Nome fixo para substituir
             geradorImagem.salvarImagem(imagem, nomeArquivo);
-            
         } else {
-            System.err.println("[" + config.id() + "] Falha ao capturar imagem do display");
+            System.err.println("[" + config.id() + "] Falha ao gerar imagem");
         }
     }
     
     /**
      * Captura a imagem atual do display visual
+     * Funciona mesmo quando a janela não está visível
      */
     private java.awt.image.BufferedImage capturarImagemDisplay() {
         try {
-            // Obter o tamanho do painel Display
-            int width = display.getWidth();
-            int height = display.getHeight();
+            // Obter o tamanho do painel Display (800x600 fixo)
+            int width = 800;
+            int height = 600;
             
-            if (width <= 0 || height <= 0) {
-                // Display ainda não foi renderizado, usar tamanho padrão
-                width = 800;
-                height = 600;
-            }
-            
-            // Garantir que o display seja atualizado antes de capturar
-            final int finalWidth = width;
-            final int finalHeight = height;
             final java.awt.image.BufferedImage[] imagemCapturada = new java.awt.image.BufferedImage[1];
             
             // Executar na thread do EDT para garantir renderização correta
             javax.swing.SwingUtilities.invokeAndWait(() -> {
                 try {
-                    // Forçar atualização do display
-                    display.revalidate();
-                    display.repaint();
-                    
-                    // Aguardar um pouco para garantir renderização
-                    Thread.sleep(100);
-                    
                     // Criar BufferedImage para capturar
                     java.awt.image.BufferedImage imagem = new java.awt.image.BufferedImage(
-                        finalWidth, finalHeight, java.awt.image.BufferedImage.TYPE_INT_RGB
+                        width, height, java.awt.image.BufferedImage.TYPE_INT_RGB
                     );
                     
                     // Renderizar o Display na imagem
                     java.awt.Graphics2D g2d = imagem.createGraphics();
                     g2d.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, 
                                         java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2d.setRenderingHint(java.awt.RenderingHints.KEY_RENDERING,
+                                        java.awt.RenderingHints.VALUE_RENDER_QUALITY);
+                    g2d.setRenderingHint(java.awt.RenderingHints.KEY_TEXT_ANTIALIASING,
+                                        java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                    
+                    display.setSize(width, height);
+                    display.doLayout();
+                    
                     display.paint(g2d);
                     g2d.dispose();
                     

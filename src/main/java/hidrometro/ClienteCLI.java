@@ -81,7 +81,6 @@ public class ClienteCLI {
         System.out.println("\n" + SEPARADOR);
         System.out.println("    " + TITULO);
         System.out.println(SEPARADOR);
-        System.out.println("  Padrão Façade Singleton");
         System.out.println("  Controle total do SHA via CLI");
         System.out.println(SEPARADOR + "\n");
     }

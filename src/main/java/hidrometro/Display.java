@@ -7,7 +7,8 @@ import java.awt.image.BufferedImage;
 
 public class Display extends JPanel {
     private double vazaoExibida;
-    private double volumeExibido;
+    private String volumeExibido;
+    private double volumeDouble;
     private double pressaoExibida;
     private String statusConexao;
     private boolean faltaAgua;
@@ -22,7 +23,8 @@ public class Display extends JPanel {
 
     public Display() {
         this.vazaoExibida = 0.0;
-        this.volumeExibido = 0.0;
+        this.volumeExibido = "000000";
+        this.volumeDouble = 0.0;
         this.pressaoExibida = 0.0;
         this.statusConexao = "Conectado";
         this.faltaAgua = false;
@@ -81,7 +83,7 @@ public class Display extends JPanel {
         sliderVazao.addChangeListener(e -> {
             if (!faltaAgua) {
                 double novaVazao = sliderVazao.getValue() / 10.0;
-                atualizarDisplay(novaVazao, volumeExibido, pressaoExibida);
+                atualizarDisplay(novaVazao, volumeDouble, pressaoExibida);
             } else {
                 sliderVazao.setValue(0); // trava em 0 se faltar água
             }
@@ -136,7 +138,8 @@ public class Display extends JPanel {
 
     public void atualizarDisplay(double vazao, double volume, double pressao) {
         this.vazaoExibida = vazao;
-        this.volumeExibido = volume;
+        this.volumeDouble = volume;
+        this.volumeExibido = formatarVolume(volume);
         this.pressaoExibida = pressao;
 
         if (vazao <= 0) {
@@ -193,7 +196,7 @@ public class Display extends JPanel {
             );
             labelVolume.setText(
                 fmtLinha("Volume", "",
-                        String.format("%.3f", volumeExibido),
+                        volumeExibido,
                         "L", corVolume)
             );
             labelPressao.setText(
@@ -256,7 +259,7 @@ public class Display extends JPanel {
 
         g2d.setColor(Color.BLACK);
         g2d.setFont(new Font("Courier", Font.BOLD, (int)(36 * scale)));
-        String volumeStr = String.format("%.3f", volumeExibido / 1000.0);
+        String volumeStr = volumeExibido;
         FontMetrics fm = g2d.getFontMetrics();
         int textWidth = fm.stringWidth(volumeStr);
         g2d.drawString(volumeStr, displayX + (displayWidth - textWidth) / 2, displayY + displayHeight / 2 + 16);
@@ -293,5 +296,15 @@ public class Display extends JPanel {
 
     public void ocultarInterface() {
         SwingUtilities.invokeLater(() -> frame.setVisible(false));
+    }
+
+    private String formatarVolume(double volume) {
+        // Hidrômetro analógico de 6 dígitos exibe metros cúbicos (m³)
+        // Os 6 dígitos representam: XXX.YYY m³ (3 inteiros + 3 decimais)
+        // Como o volume vem em litros, convertemos: 1 litro = 0.001 m³
+        // Multiplicamos por 1000 para obter os 6 dígitos
+        // Exemplo: 1.234 L = 0.001234 m³ → display "001234"
+        int volumeInt = (int) Math.round(volume);
+        return String.format("%06d", volumeInt);
     }
 }

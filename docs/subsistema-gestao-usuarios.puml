@@ -1,0 +1,562 @@
+@startuml Subsistema - Gestão de Clientes
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam classBackgroundColor #E8F4F8
+skinparam classBorderColor #2C5F7C
+
+title Subsistema 1: Gestão de Clientes
+
+' ========== PADRÕES APLICADOS ==========
+note as PadroesAplicados
+    **PADRÕES DE PROJETO APLICADOS:**
+    
+    1. **Factory Pattern** - Criação de objetos Cliente
+    
+end note
+
+' ========== ENTIDADES DE DOMÍNIO ==========
+
+class Cliente {
+    - cpfCnpj: String {unique}
+    - nome: String
+    - email: String {unique}
+    - telefone: String
+    - endereco: Endereco
+    - tipoCliente: TipoCliente
+    - status: StatusCliente
+    - dataCadastro: LocalDateTime
+    __
+    + getCpfCnpj(): String
+    + getNome(): String
+    + getEmail(): String
+    + isAtivo(): boolean
+    + ativar(): void
+    + desativar(): void
+}
+
+enum TipoCliente {
+    RESIDENCIAL
+    COMERCIAL
+    INDUSTRIAL
+}
+
+enum StatusCliente {
+    ATIVO
+    INATIVO
+    SUSPENSO
+}
+
+class Endereco {
+    - logradouro: String
+    - numero: String
+    - bairro: String
+    - cidade: String
+    - estado: String
+    - cep: String
+    __
+    + getEnderecoCompleto(): String
+}
+
+class Hidrometro {
+    - idHidrometro: String {unique}
+    - cpfCnpjCliente: String {FK}
+    - enderecoInstalacao: Endereco
+    - dataInstalacao: LocalDate
+    - status: StatusHidrometro
+    - limiteConsumoMensalM3: double
+    - limiteVazaoLMin: double
+    - caminhoImagensSHA: String
+    __
+    + getId(): String
+    + getCliente(): Cliente
+    + isAtivo(): boolean
+}
+
+enum StatusHidrometro {
+    ATIVO
+    INATIVO
+    MANUTENCAO
+}
+
+' ========== CAMADA DE SERVIÇO ==========
+
+class GestaoClientesService {
+    - clienteRepository: ClienteRepository
+    - clienteValidator: ClienteValidator
+    - clienteFactory: ClienteFactory
+    __
+    + cadastrar(dados: DadosCadastroCliente): Cliente
+    + consultar(cpfCnpj: String): Cliente
+    + atualizar(cpfCnpj: String, dados): Cliente
+    + desativar(cpfCnpj: String): boolean
+    + listar(filtro): List<Cliente>
+}
+
+class GestaoHidrometrosService {
+    - hidrometroRepository: HidrometroRepository
+    - clienteRepository: ClienteRepository
+    __
+    + vincular(cpfCliente: String, dados): Hidrometro
+    + desvincular(idHidrometro: String): boolean
+    + listarPorCliente(cpf: String): List<Hidrometro>
+    + configurarLimites(id, limiteM3, limiteVazao): void
+}
+
+' ========== FACTORIES ==========
+
+class ClienteFactory {
+    + criarCliente(dados: DadosCadastroCliente): Cliente
+    + criarEndereco(dados: DadosEndereco): Endereco
+}
+
+' ========== VALIDATORS ==========
+
+class ClienteValidator {
+    + validarCadastro(dados): boolean
+    + validarCpfCnpj(cpfCnpj: String): boolean
+    + validarEmail(email: String): boolean
+    + validarUniqueness(cpfCnpj, email): boolean
+}
+
+' ========== DTOs ==========
+
+class DadosCadastroCliente <<DTO>> {
+    + cpfCnpj: String
+    + nome: String
+    + email: String
+    + telefone: String
+    + endereco: DadosEndereco
+    + tipoCliente: TipoCliente
+}
+
+class ClienteDTO <<DTO>> {
+    + cpfCnpj: String
+    + nome: String
+    + email: String
+    + tipoCliente: String
+    + status: String
+    + totalHidrometros: int
+}
+
+' ========== REPOSITORIES ==========
+
+interface ClienteRepository {
+    + salvar(cliente: Cliente): Cliente
+    + buscarPorCpfCnpj(cpfCnpj): Optional<Cliente>
+    + buscarPorEmail(email): Optional<Cliente>
+    + atualizar(cliente: Cliente): Cliente
+    + listar(): List<Cliente>
+    + existePorCpfCnpj(cpfCnpj): boolean
+}
+
+interface HidrometroRepository {
+    + salvar(hidrometro): Hidrometro
+    + buscarPorId(id): Optional<Hidrometro>
+    + buscarPorCliente(cpf): List<Hidrometro>
+    + deletar(id): boolean
+}
+
+' ========== RELACIONAMENTOS ==========
+
+Cliente "1" *-- "1" Endereco
+Cliente "1" -- "0..*" Hidrometro
+Hidrometro "1" *-- "1" Endereco
+Cliente -- TipoCliente
+Cliente -- StatusCliente
+Hidrometro -- StatusHidrometro
+
+GestaoClientesService --> ClienteRepository
+GestaoClientesService --> ClienteValidator
+GestaoClientesService --> ClienteFactory
+GestaoClientesService ..> Cliente
+
+GestaoHidrometrosService --> HidrometroRepository
+GestaoHidrometrosService --> ClienteRepository
+
+ClienteFactory ..> Cliente : cria
+ClienteValidator ..> DadosCadastroCliente : valida
+
+note right of GestaoClientesService
+    **SERVIÇO PRINCIPAL**
+    
+    Gerencia CRUD de clientes.
+end note
+
+note bottom of ClienteRepository
+    **REPOSITORY PATTERN**
+    
+    Abstrai persistência.
+end note
+
+@enduml
+
+' ========== ENTIDADES DE DOMÍNIO ==========
+
+class Usuario {
+    - cpfCnpj: String {unique}
+    - nome: String
+    - email: String {unique}
+    - telefone: String
+    - endereco: Endereco
+    - tipoCliente: TipoCliente
+    - status: StatusUsuario
+    - dataCadastro: LocalDateTime
+    - dataUltimaAtualizacao: LocalDateTime
+    - senhaHash: String
+    __
+    + getCpfCnpj(): String
+    + getNome(): String
+    + getEmail(): String
+    + isAtivo(): boolean
+    + ativar(): void
+    + desativar(): void
+    + atualizarDados(dados): void
+}
+
+enum TipoCliente {
+    RESIDENCIAL
+    COMERCIAL
+    INDUSTRIAL
+    PUBLICO
+}
+
+enum StatusUsuario {
+    ATIVO
+    INATIVO
+    SUSPENSO
+}
+
+class Endereco {
+    - logradouro: String
+    - numero: String
+    - complemento: String
+    - bairro: String
+    - cidade: String
+    - estado: String
+    - cep: String
+    __
+    + getEnderecoCompleto(): String
+}
+
+class Hidrometro {
+    - idHidrometro: String {unique}
+    - cpfCnpjUsuario: String {FK}
+    - enderecoInstalacao: Endereco
+    - dataInstalacao: LocalDate
+    - status: StatusHidrometro
+    - limiteConsumoMensal: double
+    - caminhoImagensSHA: String
+    - ultimaLeitura: LocalDateTime
+    __
+    + getId(): String
+    + getUsuario(): Usuario
+    + isAtivo(): boolean
+    + atualizarStatus(status): void
+    + configurarLimite(limite): void
+}
+
+enum StatusHidrometro {
+    ATIVO
+    INATIVO
+    MANUTENCAO
+    DESATIVADO
+}
+
+' ========== CAMADA DE SERVIÇO (Business Logic) ==========
+
+class GestaoUsuariosService {
+    - usuarioRepository: UsuarioRepository
+    - usuarioValidator: UsuarioValidator
+    - usuarioFactory: UsuarioFactory
+    - logService: LogService
+    __
+    + cadastrar(dados: DadosCadastroUsuario): Usuario
+    + consultar(cpfCnpj: String): Usuario
+    + atualizar(cpfCnpj: String, dados: DadosAtualizacaoUsuario): Usuario
+    + desativar(cpfCnpj: String): boolean
+    + listar(filtro: FiltroBuscaUsuario): List<Usuario>
+    + alterarSenha(cpfCnpj: String, novaSenha: String): boolean
+    + validarCpfCnpj(cpfCnpj: String): boolean
+}
+
+class GestaoHidrometrosService {
+    - hidrometroRepository: HidrometroRepository
+    - usuarioRepository: UsuarioRepository
+    - hidrometroValidator: HidrometroValidator
+    - hidrometroFactory: HidrometroFactory
+    - logService: LogService
+    __
+    + associar(cpfUsuario: String, dados: DadosHidrometro): Hidrometro
+    + desassociar(idHidrometro: String): boolean
+    + atualizar(idHidrometro: String, dados: DadosHidrometro): Hidrometro
+    + consultar(idHidrometro: String): Hidrometro
+    + listarPorUsuario(cpfUsuario: String): List<Hidrometro>
+    + validarExistenciaSHA(idHidrometro: String): boolean
+    + configurarLimiteConsumo(id: String, limite: double): boolean
+}
+
+' ========== VALIDATORS (Business Rules) ==========
+
+class UsuarioValidator {
+    + validarCadastro(dados: DadosCadastroUsuario): ResultadoValidacao
+    + validarCpfCnpj(cpfCnpj: String): boolean
+    + validarEmail(email: String): boolean
+    + validarTelefone(telefone: String): boolean
+    + validarEndereco(endereco: Endereco): boolean
+    + validarUniqueness(cpfCnpj: String, email: String): boolean
+    - calcularDigitosCPF(cpf: String): boolean
+    - calcularDigitosCNPJ(cnpj: String): boolean
+}
+
+class HidrometroValidator {
+    + validarAssociacao(dados: DadosHidrometro): ResultadoValidacao
+    + validarExistenciaUsuario(cpfCnpj: String): boolean
+    + validarExistenciaSHA(idSHA: String): boolean
+    + validarCaminhoImagens(caminho: String): boolean
+    + validarLimiteConsumo(limite: double): boolean
+    + validarUniqueness(idHidrometro: String): boolean
+}
+
+class ResultadoValidacao {
+    - valido: boolean
+    - erros: List<String>
+    __
+    + isValido(): boolean
+    + adicionarErro(erro: String): void
+    + getErros(): List<String>
+    + getMensagemErros(): String
+}
+
+' ========== FACTORIES (Object Creation) ==========
+
+class UsuarioFactory {
+    + criarUsuario(dados: DadosCadastroUsuario): Usuario
+    + criarEndereco(dados: DadosEndereco): Endereco
+    - gerarSenhaTemporaria(): String
+    - criptografarSenha(senha: String): String
+}
+
+class HidrometroFactory {
+    + criarHidrometro(dados: DadosHidrometro): Hidrometro
+    + gerarIdHidrometro(): String
+    - configurarPadroes(hidrometro: Hidrometro): void
+}
+
+' ========== DTOs (Data Transfer Objects) ==========
+
+class DadosCadastroUsuario <<DTO>> {
+    + cpfCnpj: String
+    + nome: String
+    + email: String
+    + telefone: String
+    + endereco: DadosEndereco
+    + tipoCliente: TipoCliente
+}
+
+class DadosAtualizacaoUsuario <<DTO>> {
+    + nome: String
+    + email: String
+    + telefone: String
+    + endereco: DadosEndereco
+}
+
+class UsuarioDTO <<DTO>> {
+    + cpfCnpj: String
+    + nome: String
+    + email: String
+    + telefone: String
+    + endereco: EnderecoDTO
+    + tipoCliente: String
+    + status: String
+    + dataCadastro: String
+    + totalHidrometros: int
+}
+
+class DadosHidrometro <<DTO>> {
+    + idHidrometro: String
+    + enderecoInstalacao: DadosEndereco
+    + limiteConsumoMensal: double
+    + caminhoImagensSHA: String
+}
+
+class HidrometroDTO <<DTO>> {
+    + idHidrometro: String
+    + cpfCnpjUsuario: String
+    + nomeUsuario: String
+    + enderecoInstalacao: EnderecoDTO
+    + status: String
+    + limiteConsumoMensal: double
+    + dataInstalacao: String
+    + ultimaLeitura: String
+}
+
+class FiltroBuscaUsuario <<DTO>> {
+    + nome: String
+    + cpfCnpj: String
+    + email: String
+    + tipoCliente: TipoCliente
+    + status: StatusUsuario
+    + cidade: String
+    + dataInicio: LocalDate
+    + dataFim: LocalDate
+}
+
+' ========== REPOSITORY (Data Access) ==========
+
+interface UsuarioRepository {
+    + salvar(usuario: Usuario): Usuario
+    + buscarPorCpfCnpj(cpfCnpj: String): Optional<Usuario>
+    + buscarPorEmail(email: String): Optional<Usuario>
+    + atualizar(usuario: Usuario): Usuario
+    + deletar(cpfCnpj: String): boolean
+    + listar(filtro: FiltroBuscaUsuario): List<Usuario>
+    + existePorCpfCnpj(cpfCnpj: String): boolean
+    + existePorEmail(email: String): boolean
+    + contarAtivos(): long
+}
+
+interface HidrometroRepository {
+    + salvar(hidrometro: Hidrometro): Hidrometro
+    + buscarPorId(id: String): Optional<Hidrometro>
+    + buscarPorUsuario(cpfCnpj: String): List<Hidrometro>
+    + atualizar(hidrometro: Hidrometro): Hidrometro
+    + deletar(id: String): boolean
+    + listar(): List<Hidrometro>
+    + existePorId(id: String): boolean
+    + contarPorUsuario(cpfCnpj: String): int
+    + listarAtivos(): List<Hidrometro>
+}
+
+class UsuarioRepositoryImpl implements UsuarioRepository {
+    - entityManager: EntityManager
+    __
+    - implementação JPA/Hibernate
+}
+
+class HidrometroRepositoryImpl implements HidrometroRepository {
+    - entityManager: EntityManager
+    __
+    - implementação JPA/Hibernate
+}
+
+' ========== EXCEÇÕES ==========
+
+class UsuarioException extends RuntimeException {
+    + UsuarioException(mensagem: String)
+    + UsuarioException(mensagem: String, causa: Throwable)
+}
+
+class UsuarioNaoEncontradoException extends UsuarioException
+class CpfCnpjDuplicadoException extends UsuarioException
+class EmailDuplicadoException extends UsuarioException
+class DadosInvalidosException extends UsuarioException
+
+class HidrometroException extends RuntimeException {
+    + HidrometroException(mensagem: String)
+}
+
+class HidrometroNaoEncontradoException extends HidrometroException
+class HidrometroDuplicadoException extends HidrometroException
+class UsuarioNaoPossuiHidrometroException extends HidrometroException
+
+' ========== RELACIONAMENTOS ==========
+
+' Entidades
+Usuario "1" *-- "1" Endereco : possui
+Usuario "1" -- "0..*" Hidrometro : possui
+Hidrometro "1" *-- "1" Endereco : instalado em
+Usuario -- TipoCliente
+Usuario -- StatusUsuario
+Hidrometro -- StatusHidrometro
+
+' Serviços
+GestaoUsuariosService --> UsuarioRepository : usa
+GestaoUsuariosService --> UsuarioValidator : valida com
+GestaoUsuariosService --> UsuarioFactory : cria com
+GestaoUsuariosService ..> Usuario : gerencia
+
+GestaoHidrometrosService --> HidrometroRepository : usa
+GestaoHidrometrosService --> UsuarioRepository : consulta
+GestaoHidrometrosService --> HidrometroValidator : valida com
+GestaoHidrometrosService --> HidrometroFactory : cria com
+GestaoHidrometrosService ..> Hidrometro : gerencia
+
+' Validators
+UsuarioValidator ..> DadosCadastroUsuario : valida
+UsuarioValidator ..> ResultadoValidacao : retorna
+HidrometroValidator ..> DadosHidrometro : valida
+HidrometroValidator ..> ResultadoValidacao : retorna
+
+' Factories
+UsuarioFactory ..> Usuario : cria
+UsuarioFactory ..> DadosCadastroUsuario : recebe
+HidrometroFactory ..> Hidrometro : cria
+HidrometroFactory ..> DadosHidrometro : recebe
+
+' DTOs
+DadosCadastroUsuario ..> Usuario : transfere para
+UsuarioDTO ..> Usuario : criado de
+DadosHidrometro ..> Hidrometro : transfere para
+HidrometroDTO ..> Hidrometro : criado de
+
+' Repositories
+UsuarioRepository ..> Usuario : persiste
+HidrometroRepository ..> Hidrometro : persiste
+
+' Exceções
+GestaoUsuariosService ..> UsuarioException : lança
+GestaoHidrometrosService ..> HidrometroException : lança
+
+' ========== NOTAS EXPLICATIVAS ==========
+
+note right of GestaoUsuariosService
+    **SERVIÇO PRINCIPAL**
+    
+    Orquestra todas as operações
+    relacionadas a usuários:
+    - Validação de dados
+    - Criação via Factory
+    - Persistência via Repository
+    - Logging de operações
+end note
+
+note left of UsuarioValidator
+    **VALIDAÇÃO DE REGRAS**
+    
+    - CPF/CNPJ válido e único
+    - Email válido e único
+    - Telefone no formato correto
+    - Endereço completo
+    - Dados obrigatórios preenchidos
+end note
+
+note bottom of UsuarioRepository
+    **REPOSITORY PATTERN**
+    
+    Abstrai a persistência de dados.
+    Implementação pode ser:
+    - JPA/Hibernate
+    - JDBC
+    - MyBatis
+    - Arquivo (teste)
+end note
+
+note right of UsuarioDTO
+    **DTO PATTERN**
+    
+    Evita exposição de entidades
+    de domínio para camadas externas.
+    Contém apenas dados necessários.
+end note
+
+note left of UsuarioFactory
+    **FACTORY PATTERN**
+    
+    Centraliza lógica de criação:
+    - Valores padrão
+    - Geração de senha temporária
+    - Criptografia
+    - Inicialização de campos
+end note
+
+@enduml

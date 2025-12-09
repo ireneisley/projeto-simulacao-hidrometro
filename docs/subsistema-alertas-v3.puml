@@ -1,0 +1,256 @@
+@startuml Subsistema - Alertas e Notificações
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam classBackgroundColor #F8E8E8
+skinparam classBorderColor #7C2C2C
+
+title Subsistema 3: Alertas e Notificações
+
+' ========== PADRÕES APLICADOS ==========
+note as PadroesAplicados
+    **PADRÕES DE PROJETO APLICADOS:**
+    
+    1. **Chain of Responsibility** - Cadeia de regras de alerta
+    2. **Observer Pattern** - Notificação automática quando alerta é gerado
+    3. **Template Method** - Estrutura comum de envio de notificações
+
+end note
+
+' ========== ENTIDADES ==========
+
+class Alerta {
+    - idAlerta: Long {PK}
+    - idHidrometro: String {FK}
+    - cpfCliente: String {FK}
+    - tipo: TipoAlerta
+    - severidade: Severidade
+    - mensagem: String
+    - dataHoraCriacao: LocalDateTime
+    - status: StatusAlerta
+    - consumoAtualM3: double
+    - limiteM3: double
+    __
+    + getId(): Long
+    + getTipo(): TipoAlerta
+    + getSeveridade(): Severidade
+    + isAtivo(): boolean
+    + resolver(): void
+}
+
+enum TipoAlerta {
+    PREVENTIVO
+    CRITICO
+}
+
+enum Severidade {
+    BAIXA
+    MEDIA
+    ALTA
+    CRITICA
+}
+
+enum StatusAlerta {
+    ATIVO
+    RESOLVIDO
+    IGNORADO
+}
+
+' ========== CAMADA DE SERVIÇO ==========
+
+class AlertaService {
+    - alertaRepository: AlertaRepository
+    - clienteRepository: ClienteRepository
+    - consumoRepository: ConsumoRepository
+    - cadeiaRegras: RegraAlertaHandler
+    - observadores: List<NotificadorObserver>
+    __
+    + verificarLimites(leitura: Leitura): Optional<Alerta>
+    + listarAlertasAtivos(): List<AlertaDTO>
+    + resolverAlerta(idAlerta: Long): void
+    + registrarObservador(obs: NotificadorObserver): void
+    - notificarObservadores(alerta: Alerta): void
+}
+
+' ========== CHAIN OF RESPONSIBILITY: Regras de Alerta ==========
+
+abstract class RegraAlertaHandler {
+    # proximaRegra: RegraAlertaHandler
+    __
+    + setProxima(proxima: RegraAlertaHandler): void
+    + processar(leitura: Leitura): Optional<Alerta> {template}
+    # abstract verificarCondicao(leitura: Leitura): boolean
+    # abstract criarAlerta(leitura: Leitura): Alerta
+}
+
+class RegraConsumoPreventivo extends RegraAlertaHandler {
+    - limitePercentual: double = 0.8 // 80%
+    __
+    # verificarCondicao(leitura: Leitura): boolean
+    # criarAlerta(leitura: Leitura): Alerta
+    - calcularConsumoMes(idHidrometro): double
+    - obterLimiteContratado(idHidrometro): double
+}
+
+class RegraConsumoCritico extends RegraAlertaHandler {
+    - limitePercentual: double = 1.0 // 100%
+    __
+    # verificarCondicao(leitura: Leitura): boolean
+    # criarAlerta(leitura: Leitura): Alerta
+}
+
+' ========== TEMPLATE METHOD: Notificadores ==========
+
+abstract class NotificadorTemplate {
+    __
+    + enviar(alerta: Alerta, cliente: Cliente): void {template}
+    # abstract formatarMensagem(alerta: Alerta, cliente: Cliente): String
+    # abstract enviarNotificacao(mensagem: String, destino: String): void
+    # validarDestinatario(destino: String): boolean
+    # registrarLog(alerta: Alerta, status: String): void
+}
+
+class NotificadorEmail extends NotificadorTemplate {
+    - mailSender: JavaMailSender
+    - remetenteEmail: String
+    __
+    # formatarMensagem(alerta, cliente): String
+    # enviarNotificacao(mensagem, destino): void
+    - criarMensagemHtml(alerta, cliente): String
+}
+
+' ========== OBSERVER PATTERN ==========
+
+interface NotificadorObserver {
+    + onAlertaGerado(alerta: Alerta): void
+}
+
+class EmailObserver implements NotificadorObserver {
+    - notificadorEmail: NotificadorEmail
+    - clienteRepository: ClienteRepository
+    __
+    + onAlertaGerado(alerta: Alerta): void
+}
+
+class DashboardObserver implements NotificadorObserver {
+    - logRepository: LogRepository
+    __
+    + onAlertaGerado(alerta: Alerta): void
+    - registrarParaDashboard(alerta: Alerta): void
+}
+
+' ========== DTOs ==========
+
+class AlertaDTO <<DTO>> {
+    + idAlerta: Long
+    + idHidrometro: String
+    + nomeCliente: String
+    + tipo: String
+    + severidade: String
+    + mensagem: String
+    + dataHora: String
+    + status: String
+}
+
+' ========== REPOSITORIES ==========
+
+interface AlertaRepository {
+    + salvar(alerta: Alerta): Alerta
+    + buscarPorId(id: Long): Optional<Alerta>
+    + listarAtivos(): List<Alerta>
+    + listarPorCliente(cpf: String): List<Alerta>
+    + listarPorHidrometro(id: String, inicio, fim): List<Alerta>
+    + contarAtivosPorCliente(cpf: String): int
+}
+
+' ========== EXCEÇÕES ==========
+
+class NotificacaoException extends RuntimeException {
+    + NotificacaoException(msg: String)
+}
+
+' ========== RELACIONAMENTOS ==========
+
+' Entidade
+Alerta -- TipoAlerta
+Alerta -- Severidade
+Alerta -- StatusAlerta
+
+' Serviço
+AlertaService --> AlertaRepository
+AlertaService --> ClienteRepository
+AlertaService --> ConsumoRepository
+AlertaService --> RegraAlertaHandler : usa cadeia
+AlertaService --> NotificadorObserver : notifica
+
+' Chain of Responsibility
+RegraAlertaHandler <|-- RegraConsumoPreventivo
+RegraAlertaHandler <|-- RegraConsumoCritico
+RegraAlertaHandler --> RegraAlertaHandler : proximaRegra
+RegraAlertaHandler ..> Alerta : cria
+
+' Template Method
+NotificadorTemplate <|-- NotificadorEmail
+NotificadorTemplate ..> Alerta : processa
+
+' Observer Pattern
+NotificadorObserver <|.. EmailObserver
+NotificadorObserver <|.. DashboardObserver
+EmailObserver --> NotificadorEmail : usa
+
+' DTOs
+AlertaService ..> AlertaDTO : retorna
+
+' Exceções
+NotificadorTemplate ..> NotificacaoException : lança
+
+' ========== NOTAS EXPLICATIVAS ==========
+
+note right of RegraAlertaHandler
+    **CHAIN OF RESPONSIBILITY**
+    
+    Cadeia de regras (ordem importa):
+    1. RegraConsumoPreventivo (80%)
+    2. RegraConsumoCritico (100%)
+    
+    Primeira regra que detectar problema
+    cria o alerta e interrompe a cadeia.
+    
+    Configuração:
+    preventivo.setProxima(critico)
+end note
+
+note left of NotificadorTemplate
+    **TEMPLATE METHOD**
+    
+    Pipeline de notificação:
+    1. formatarMensagem() - abstrato
+    2. validarDestinatario()
+    3. enviarNotificacao() - abstrato
+    4. registrarLog()
+    
+    Email implementa
+    formatação e envio específicos.
+end note
+
+note bottom of EmailObserver
+    **OBSERVER PATTERN**
+    
+    Quando AlertaService gera alerta:
+    1. Notifica EmailObserver (envia email)
+    2. Notifica DashboardObserver (registra log)
+    
+    Admin visualiza alertas no painel:
+    - Lista de alertas ativos
+    - Histórico de alertas
+    - Estatísticas por cliente
+end note
+
+note right of AlertaRepository
+    **REPOSITORY PATTERN**
+    
+    Queries principais:
+    - listarAtivos() - alertas não resolvidos
+    - listarPorCliente() - histórico
+    - contarAtivosPorCliente() - dashboard
+end note
+@enduml

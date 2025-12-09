@@ -1,0 +1,137 @@
+@startuml Arquitetura Geral - 5 Subsistemas
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam componentBackgroundColor #E8F4F8
+skinparam componentBorderColor #2C5F7C
+
+title Arquitetura Geral: Painel de Monitoramento (Versão 3.0 - Acadêmica)
+
+package "Clientes do Sistema" {
+    [API REST] as API
+    [CLI (Terminal)] as CLI
+    [Aplicação Desktop] as Desktop
+    [Outros Integradores] as Outros
+    
+    note right of API
+        Sistema não implementa frontend.
+        A Fachada pode ser consumida por
+        qualquer tipo de cliente:
+        - API REST (JSON)
+        - CLI (linha de comando)
+        - Desktop (JavaFX/Swing)
+        - Outros sistemas via API
+    end note
+}
+
+package "Camada de Fachada" <<Facade>> {
+    component [PainelMonitoramentoFacade\n<<Singleton>>] as Facade
+}
+
+package "Camada de Serviços (Business Logic)" {
+    
+    component [1. Gestão de Clientes\n- ClienteService\n- HidrometroService] as S1
+    component [2. Monitoramento Consumo\n- ConsumoService\n- AnalisadorStrategy] as S2
+    component [3. Alertas e Notificações\n- AlertaService\n- Chain of Responsibility\n- Observer] as S3
+    component [4. Processamento Imagens\n- ProcessamentoService\n- Template Method\n- OCR Adapter] as S4
+    component [5. Autenticação JWT\n- AuthService\n- JWTTokenManager\n- Proxy] as S5
+}
+
+package "Camada de Infraestrutura" {
+    database "PostgreSQL\nBD Relacional" as DB
+    folder "Sistema de Arquivos\nImagens SHA + Logs" as FS
+    cloud "Serviços Externos\n- SMTP (Email)" as EXT
+}
+
+' Relacionamentos Clientes → Fachada (todos usam mesma interface)
+API --> Facade : REST endpoints
+CLI --> Facade : comandos
+Desktop --> Facade : chamadas diretas
+Outros --> Facade : integração
+
+' Relacionamentos Fachada → Serviços
+Facade --> S1
+Facade --> S2
+Facade --> S3
+Facade --> S4
+Facade --> S5
+
+' Relacionamentos Serviços → Infraestrutura
+S1 --> DB : persiste clientes/SHA
+S2 --> DB : lê leituras
+S3 --> DB : persiste alertas
+S3 --> EXT : envia notificações
+S4 --> FS : lê imagens
+S4 --> DB : salva leituras
+S5 --> DB : valida admin
+
+' Relacionamentos entre Serviços
+S4 ..> S2 : cria leituras
+S2 ..> S3 : notifica nova leitura (Observer)
+S3 ..> S1 : consulta cliente
+
+note right of Facade
+    **FACADE PATTERN + SINGLETON**
+    
+    Ponto único de entrada para
+    QUALQUER tipo de cliente.
+    
+    Interface unificada independente
+    de como será consumida:
+    - REST API retorna JSON
+    - CLI exibe no terminal
+    - Desktop usa objetos Java
+    
+    Implementa Singleton.
+end note
+
+note bottom of S1
+    **PADRÕES:**
+    - Repository
+    - DTO
+    - Factory
+end note
+
+note bottom of S2
+    **PADRÕES:**
+    - Strategy
+    - Observer
+end note
+
+note bottom of S3
+    **PADRÕES:**
+    - Chain of Responsibility
+    - Observer
+    - Template Method
+end note
+
+note bottom of S4
+    **PADRÕES:**
+    - Template Method
+    - Adapter
+end note
+
+note bottom of S5
+    **PADRÕES:**
+    - Singleton
+    - Proxy
+end note
+
+note right of DB
+    **TABELAS PRINCIPAIS:**
+    - clientes
+    - hidrometros
+    - leituras
+    - alertas
+    - admins
+    - logs_auditoria
+end note
+
+note left of FS
+    **DIRETÓRIOS:**
+    /imagens_sha/
+    /imagens_processadas/
+    /imagens_erro/
+    /logs/
+end note
+
+@enduml

@@ -1,0 +1,485 @@
+@startuml Subsistema - Autenticação e Segurança
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam classBackgroundColor #F8F8E8
+skinparam classBorderColor #7C7C2C
+
+title Subsistema: Autenticação e Segurança
+
+' ========== PADRÕES APLICADOS ==========
+note as PadroesAplicados
+    **PADRÕES DE PROJETO APLICADOS:**
+    
+    1. **Proxy Pattern** - Controle de acesso a recursos
+    2. **Decorator Pattern** - Camadas de segurança
+    3. **Strategy Pattern** - Diferentes tipos de autenticação
+    4. **Singleton Pattern** - Gerenciador de sessões
+    5. **Chain of Responsibility** - Filtros de segurança
+end note
+
+' ========== ENTIDADES ==========
+
+class UsuarioSistema {
+    - login: String {unique}
+    - senhaHash: String
+    - perfilAcesso: PerfilAcesso
+    - nome: String
+    - email: String
+    - status: StatusUsuario
+    - dataCriacao: LocalDateTime
+    - ultimoAcesso: LocalDateTime
+    - tentativasLogin: int
+    - bloqueadoAte: LocalDateTime
+    __
+    + getLogin(): String
+    + getPerfil(): PerfilAcesso
+    + isAtivo(): boolean
+    + incrementarTentativasLogin(): void
+    + resetarTentativasLogin(): void
+    + bloquear(duracao: Duration): void
+}
+
+enum PerfilAcesso {
+    ADMINISTRADOR
+    OPERADOR
+    OPERADOR_LEITURA
+    CLIENTE
+    SISTEMA_EXTERNO
+}
+
+class Sessao {
+    - idSessao: String {unique}
+    - login: String
+    - token: String
+    - timestampCriacao: LocalDateTime
+    - timestampExpiracao: LocalDateTime
+    - ipOrigem: String
+    - ativo: boolean
+    __
+    + getId(): String
+    + isValida(): boolean
+    + renovar(duracao: Duration): void
+    + invalidar(): void
+}
+
+class Permissao {
+    - idPermissao: Long {PK}
+    - recurso: String
+    - acao: TipoAcao
+    - descricao: String
+    __
+    + getRecurso(): String
+    + getAcao(): TipoAcao
+}
+
+enum TipoAcao {
+    VISUALIZAR
+    CRIAR
+    EDITAR
+    DELETAR
+    EXECUTAR
+    EXPORTAR
+}
+
+class PerfilPermissao {
+    - perfil: PerfilAcesso {PK}
+    - permissao: Permissao {PK}
+    __
+    + getPerfil(): PerfilAcesso
+    + getPermissao(): Permissao
+}
+
+' ========== CAMADA DE SERVIÇO ==========
+
+class AutenticacaoService {
+    - usuarioRepository: UsuarioSistemaRepository
+    - sessaoManager: SessaoManager
+    - estrategiaAuth: EstrategiaAutenticacao
+    - criptografiaService: CriptografiaService
+    - logService: LogService
+    - maxTentativasLogin: int
+    - duracaoBloqueio: Duration
+    __
+    + autenticar(login: String, senha: String): TokenDTO
+    + logout(token: String): boolean
+    + validarToken(token: String): boolean
+    + renovarToken(tokenAntigo: String): TokenDTO
+    + alterarSenha(login: String, senhaAtual: String, novaSenha: String): boolean
+    + recuperarSenha(email: String): boolean
+    + validarSessao(token: String): Sessao
+    - bloquearUsuario(login: String): void
+    - registrarTentativaLogin(login: String, sucesso: boolean): void
+}
+
+class GerenciadorPermissoes {
+    - perfilPermissaoRepository: PerfilPermissaoRepository
+    - cache: Map<PerfilAcesso, Set<Permissao>>
+    __
+    + verificarAcesso(perfil: PerfilAcesso, recurso: String, acao: TipoAcao): boolean
+    + listarPermissoes(perfil: PerfilAcesso): Set<Permissao>
+    + atribuirPermissao(perfil: PerfilAcesso, permissao: Permissao): boolean
+    + revogarPermissao(perfil: PerfilAcesso, permissao: Permissao): boolean
+    + carregarPermissoesCache(): void
+    + limparCache(): void
+}
+
+' ========== SINGLETON: Gerenciador de Sessões ==========
+
+class SessaoManager <<Singleton>> {
+    - instance: SessaoManager {static}
+    - sessoes: Map<String, Sessao>
+    - scheduler: ScheduledExecutorService
+    __
+    + getInstance(): SessaoManager {static}
+    + criarSessao(usuario: UsuarioSistema, ip: String): Sessao
+    + obterSessao(token: String): Optional<Sessao>
+    + invalidarSessao(token: String): boolean
+    + renovarSessao(token: String): Sessao
+    + limparSessoesExpiradas(): void
+    + contarSessoesAtivas(): int
+    + listarSessoesUsuario(login: String): List<Sessao>
+    - agendarLimpeza(): void
+}
+
+' ========== STRATEGY PATTERN: Estratégias de Autenticação ==========
+
+interface EstrategiaAutenticacao <<Strategy>> {
+    + autenticar(credenciais: Credenciais): ResultadoAutenticacao
+    + validar(token: String): boolean
+}
+
+class AutenticacaoLocal implements EstrategiaAutenticacao {
+    - usuarioRepository: UsuarioSistemaRepository
+    - criptografiaService: CriptografiaService
+    __
+    + autenticar(credenciais: Credenciais): ResultadoAutenticacao
+    + validar(token: String): boolean
+    - compararSenha(senha: String, hash: String): boolean
+}
+
+class AutenticacaoLDAP implements EstrategiaAutenticacao {
+    - ldapConfig: LDAPConfig
+    - ldapTemplate: LdapTemplate
+    __
+    + autenticar(credenciais: Credenciais): ResultadoAutenticacao
+    + validar(token: String): boolean
+    - conectarLDAP(): DirContext
+}
+
+class AutenticacaoOAuth2 implements EstrategiaAutenticacao {
+    - oauthConfig: OAuth2Config
+    - tokenService: TokenService
+    __
+    + autenticar(credenciais: Credenciais): ResultadoAutenticacao
+    + validar(token: String): boolean
+    - validarTokenExterno(token: String): boolean
+}
+
+class AutenticacaoJWT implements EstrategiaAutenticacao {
+    - jwtConfig: JWTConfig
+    - secretKey: String
+    __
+    + autenticar(credenciais: Credenciais): ResultadoAutenticacao
+    + validar(token: String): boolean
+    + gerarToken(usuario: UsuarioSistema): String
+    + decodificarToken(token: String): Claims
+}
+
+class Credenciais {
+    - login: String
+    - senha: String
+    - tipo: TipoCredencial
+    __
+    + getLogin(): String
+    + getSenha(): String
+}
+
+enum TipoCredencial {
+    USUARIO_SENHA
+    TOKEN
+    CERTIFICADO
+    BIOMETRIA
+}
+
+class ResultadoAutenticacao {
+    - sucesso: boolean
+    - usuario: UsuarioSistema
+    - token: String
+    - mensagem: String
+    - perfil: PerfilAcesso
+    __
+    + isSucesso(): boolean
+    + getToken(): String
+}
+
+' ========== PROXY PATTERN: Controle de Acesso ==========
+
+interface ServicoProtegido {
+    + executar(parametros: Map<String, Object>): Object
+}
+
+class ProxySeguranca implements ServicoProtegido {
+    - servicoReal: ServicoProtegido
+    - gerenciadorPermissoes: GerenciadorPermissoes
+    - usuarioAtual: UsuarioSistema
+    __
+    + executar(parametros: Map<String, Object>): Object
+    - verificarPermissao(): boolean
+    - registrarAcesso(): void
+}
+
+' ========== DECORATOR PATTERN: Camadas de Segurança ==========
+
+abstract class DecoradorSeguranca implements ServicoProtegido {
+    # servicoWrapped: ServicoProtegido
+    __
+    + executar(parametros: Map<String, Object>): Object
+}
+
+class ValidadorEntrada extends DecoradorSeguranca {
+    + executar(parametros: Map<String, Object>): Object
+    - validarParametros(parametros): boolean
+    - sanitizarEntrada(valor: String): String
+}
+
+class CriptografadorDados extends DecoradorSeguranca {
+    - criptografiaService: CriptografiaService
+    __
+    + executar(parametros: Map<String, Object>): Object
+    - criptografarDadosSensiveis(dados): Object
+    - descriptografarDados(dados): Object
+}
+
+class AuditorAcesso extends DecoradorSeguranca {
+    - logService: LogService
+    __
+    + executar(parametros: Map<String, Object>): Object
+    - registrarLog(usuario, acao, resultado): void
+}
+
+' ========== CRIPTOGRAFIA ==========
+
+class CriptografiaService {
+    - algoritmo: String
+    - chavePublica: PublicKey
+    - chavePrivada: PrivateKey
+    __
+    + criptografarSenha(senha: String): String
+    + validarSenha(senha: String, hash: String): boolean
+    + criptografarDados(dados: String): String
+    + descriptografarDados(dadosCript: String): String
+    + gerarHash(texto: String): String
+    + gerarSalt(): String
+}
+
+' ========== CHAIN OF RESPONSIBILITY: Filtros de Segurança ==========
+
+abstract class FiltroSeguranca {
+    # proximoFiltro: FiltroSeguranca
+    __
+    + setProximo(filtro: FiltroSeguranca): void
+    + processar(requisicao: Requisicao): ResultadoFiltro {abstract}
+}
+
+class FiltroAutenticacao extends FiltroSeguranca {
+    + processar(requisicao: Requisicao): ResultadoFiltro
+    - extrairToken(requisicao): String
+    - validarToken(token): boolean
+}
+
+class FiltroAutorizacao extends FiltroSeguranca {
+    - gerenciadorPermissoes: GerenciadorPermissoes
+    __
+    + processar(requisicao: Requisicao): ResultadoFiltro
+    - verificarPermissoes(usuario, recurso): boolean
+}
+
+class FiltroAntiCSRF extends FiltroSeguranca {
+    + processar(requisicao: Requisicao): ResultadoFiltro
+    - validarTokenCSRF(requisicao): boolean
+}
+
+class FiltroRateLimit extends FiltroSeguranca {
+    - limitePorMinuto: int
+    - registros: Map<String, Integer>
+    __
+    + processar(requisicao: Requisicao): ResultadoFiltro
+    - verificarLimite(ip: String): boolean
+}
+
+class Requisicao {
+    - metodo: String
+    - uri: String
+    - headers: Map<String, String>
+    - parametros: Map<String, Object>
+    - ipOrigem: String
+}
+
+class ResultadoFiltro {
+    - permitido: boolean
+    - mensagem: String
+    - codigoHTTP: int
+}
+
+' ========== DTOs ==========
+
+class TokenDTO <<DTO>> {
+    + token: String
+    + tipo: String
+    + expiracao: String
+    + perfil: String
+}
+
+class UsuarioSistemaDTO <<DTO>> {
+    + login: String
+    + nome: String
+    + email: String
+    + perfil: String
+    + permissoes: List<String>
+}
+
+' ========== REPOSITORIES ==========
+
+interface UsuarioSistemaRepository {
+    + salvar(usuario: UsuarioSistema): UsuarioSistema
+    + buscarPorLogin(login: String): Optional<UsuarioSistema>
+    + buscarPorEmail(email: String): Optional<UsuarioSistema>
+    + atualizar(usuario: UsuarioSistema): UsuarioSistema
+    + listar(): List<UsuarioSistema>
+    + existePorLogin(login: String): boolean
+}
+
+interface PerfilPermissaoRepository {
+    + salvar(perfilPermissao: PerfilPermissao): PerfilPermissao
+    + buscarPorPerfil(perfil: PerfilAcesso): List<PerfilPermissao>
+    + deletar(perfil: PerfilAcesso, permissao: Permissao): boolean
+    + listarTodasPermissoes(): List<Permissao>
+}
+
+' ========== EXCEÇÕES ==========
+
+class AutenticacaoException extends RuntimeException
+class UsuarioBloqueadoException extends AutenticacaoException
+class SenhaInvalidaException extends AutenticacaoException
+class TokenInvalidoException extends AutenticacaoException
+class AcessoNegadoException extends RuntimeException
+
+' ========== RELACIONAMENTOS ==========
+
+' Entidades
+UsuarioSistema -- PerfilAcesso
+Sessao -- UsuarioSistema
+PerfilPermissao -- PerfilAcesso
+PerfilPermissao -- Permissao
+Permissao -- TipoAcao
+
+' Serviços
+AutenticacaoService --> UsuarioSistemaRepository : usa
+AutenticacaoService --> SessaoManager : gerencia sessões
+AutenticacaoService --> EstrategiaAutenticacao : usa
+AutenticacaoService --> CriptografiaService : criptografa com
+
+GerenciadorPermissoes --> PerfilPermissaoRepository : usa
+
+' Singleton
+SessaoManager ..> Sessao : gerencia
+
+' Strategy Pattern
+EstrategiaAutenticacao <|.. AutenticacaoLocal
+EstrategiaAutenticacao <|.. AutenticacaoLDAP
+EstrategiaAutenticacao <|.. AutenticacaoOAuth2
+EstrategiaAutenticacao <|.. AutenticacaoJWT
+EstrategiaAutenticacao ..> Credenciais : recebe
+EstrategiaAutenticacao ..> ResultadoAutenticacao : retorna
+
+' Proxy Pattern
+ServicoProtegido <|.. ProxySeguranca
+ProxySeguranca --> ServicoProtegido : protege
+ProxySeguranca --> GerenciadorPermissoes : verifica com
+
+' Decorator Pattern
+ServicoProtegido <|.. DecoradorSeguranca
+DecoradorSeguranca <|-- ValidadorEntrada
+DecoradorSeguranca <|-- CriptografadorDados
+DecoradorSeguranca <|-- AuditorAcesso
+DecoradorSeguranca --> ServicoProtegido : decora
+
+' Chain of Responsibility
+FiltroSeguranca <|-- FiltroAutenticacao
+FiltroSeguranca <|-- FiltroAutorizacao
+FiltroSeguranca <|-- FiltroAntiCSRF
+FiltroSeguranca <|-- FiltroRateLimit
+FiltroSeguranca --> FiltroSeguranca : proximoFiltro
+FiltroSeguranca ..> Requisicao : processa
+FiltroSeguranca ..> ResultadoFiltro : retorna
+
+' ========== NOTAS EXPLICATIVAS ==========
+
+note right of AutenticacaoService
+    **SERVIÇO DE AUTENTICAÇÃO**
+    
+    Responsabilidades:
+    - Autenticar usuários
+    - Gerenciar sessões e tokens
+    - Controlar tentativas de login
+    - Bloquear usuários
+    - Alteração e recuperação de senha
+end note
+
+note bottom of SessaoManager
+    **SINGLETON PATTERN**
+    
+    Instância única para gerenciar
+    todas as sessões do sistema.
+    
+    - Thread-safe
+    - Limpeza automática de sessões expiradas
+    - Cache em memória
+end note
+
+note left of EstrategiaAutenticacao
+    **STRATEGY PATTERN**
+    
+    Permite trocar mecanismo de
+    autenticação em tempo de execução:
+    - Local (banco de dados)
+    - LDAP (Active Directory)
+    - OAuth2 (Google, Facebook)
+    - JWT (stateless)
+end note
+
+note bottom of ProxySeguranca
+    **PROXY PATTERN**
+    
+    Intercepta chamadas e adiciona:
+    - Verificação de permissões
+    - Logging de acessos
+    - Validação de sessão
+    
+    Controla acesso ao serviço real.
+end note
+
+note right of DecoradorSeguranca
+    **DECORATOR PATTERN**
+    
+    Adiciona camadas de segurança:
+    1. ValidadorEntrada (sanitização)
+    2. CriptografadorDados (dados sensíveis)
+    3. AuditorAcesso (logs)
+    
+    Camadas podem ser combinadas.
+end note
+
+note bottom of FiltroSeguranca
+    **CHAIN OF RESPONSIBILITY**
+    
+    Pipeline de filtros:
+    1. Autenticação (token válido?)
+    2. Autorização (tem permissão?)
+    3. Anti-CSRF (token CSRF válido?)
+    4. Rate Limit (excedeu limite?)
+    
+    Requisição passa por todos os filtros.
+end note
+
+@enduml

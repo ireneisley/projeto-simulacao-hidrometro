@@ -48,20 +48,6 @@ public class ClienteCLI {
                     habilitarGeracaoImagem(scanner, fachada);
                     break;
                     
-                case "6":
-                    fachada.listarSHAsAtivos();
-                    break;
-                    
-                case "7":
-                    fachada.finalizarSistema();
-                    break;
-                    
-                case "0":
-                    System.out.println("Finalizando sistema...");
-                    fachada.finalizarSistema();
-                    executando = false;
-                    break;
-                    
                 default:
                     System.out.println("Opção inválida! Tente novamente.");
             }
@@ -94,9 +80,6 @@ public class ClienteCLI {
         System.out.println("3) Finalizar SHA");
         System.out.println("4) Modificar Vazão SHA");
         System.out.println("5) Habilitar/Desabilitar Geração de Imagens");
-        System.out.println("6) Listar SHAs Ativos");
-        System.out.println("7) Finalizar Todos os SHAs");
-        System.out.println("0) Sair");
         System.out.println(SEPARADOR);
     }
     
@@ -186,9 +169,6 @@ public class ClienteCLI {
             return;
         }
         
-        // Mostrar SHAs ativos
-        fachada.listarSHAsAtivos();
-        
         System.out.print("\nID do SHA a finalizar: ");
         String id = scanner.nextLine().trim();
         
@@ -213,9 +193,6 @@ public class ClienteCLI {
             System.out.println("Nenhum SHA ativo no momento.");
             return;
         }
-        
-        // Mostrar SHAs ativos
-        fachada.listarSHAsAtivos();
         
         System.out.print("\nID do SHA: ");
         String id = scanner.nextLine().trim();
@@ -242,9 +219,6 @@ public class ClienteCLI {
             System.out.println("Nenhum SHA ativo no momento.");
             return;
         }
-        
-        // Mostrar SHAs ativos
-        fachada.listarSHAsAtivos();
         
         System.out.print("\nID do SHA: ");
         String id = scanner.nextLine().trim();

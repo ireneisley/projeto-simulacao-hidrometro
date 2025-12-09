@@ -133,7 +133,7 @@ public class HidrometroFachada {
             boolean exibirDisplay) {
         
         if (!sistemaAtivo) {
-            System.err.println("✗ Sistema não está configurado. Execute configSimuladorSHA() primeiro.");
+            System.err.println("Sistema não está configurado. Execute configSimuladorSHA() primeiro.");
             return null;
         }
 
@@ -142,7 +142,7 @@ public class HidrometroFachada {
         }
 
         if (hidrometrosAtivos.containsKey(id)) {
-            System.err.println("✗ Já existe um SHA com ID: " + id);
+            System.err.println("Já existe um SHA com ID: " + id);
             return null;
         }
         
@@ -182,7 +182,7 @@ public class HidrometroFachada {
             
             iniciarThreadsHidrometro(id, hidrometro);
             
-            System.out.println("✓ SHA " + id + " criado e iniciado com sucesso");
+            System.out.println("SHA " + id + " criado e iniciado com sucesso");
             System.out.println("  - Vazão entrada: " + vazaoEntrada + " L/min");
             System.out.println("  - Vazão saída: " + vazaoSaida + " L/min");
             System.out.println("  - Tipo fluido: " + tipo);
@@ -254,7 +254,6 @@ public class HidrometroFachada {
         try {
             Hidrometro hidrometro = hidrometrosAtivos.get(id);
             
-            // Modificar as vazões através dos novos métodos
             if (novaVazaoEntrada > 0) {
                 hidrometro.setVazaoEntrada(novaVazaoEntrada);
                 System.out.println("  - Nova vazão entrada: " + novaVazaoEntrada + " L/min");
@@ -374,7 +373,6 @@ public class HidrometroFachada {
         }, 0, 1, TimeUnit.SECONDS);
         schedulersMedicao.put(id, schedulerMedicao);
         
-        // Thread de atualização do display (configurável)
         ScheduledExecutorService schedulerDisplay = Executors.newScheduledThreadPool(1);
         long intervalo = Math.max(1, intervaloPasso / 1000);  // Converter ms para segundos
         schedulerDisplay.scheduleAtFixedRate(() -> {
@@ -402,7 +400,7 @@ public class HidrometroFachada {
         }, 2, 5, TimeUnit.SECONDS);
         schedulersEventos.put(id, schedulerEventos);
         
-        // Thread de geração de imagens (se habilitado globalmente)
+        // Thread de geração de imagens
         if (geracaoImagensGlobal) {
             habilitaGeracaoImagemSHA(id, true, intervaloImagensGlobal);
         }
@@ -436,7 +434,6 @@ public class HidrometroFachada {
     public void finalizarSistema() {
         System.out.println("\n=== Finalizando Sistema SHA ===");
         
-        // Copiar IDs para evitar ConcurrentModificationException
         String[] ids = hidrometrosAtivos.keySet().toArray(new String[0]);
         
         for (String id : ids) {
@@ -445,33 +442,6 @@ public class HidrometroFachada {
         
         sistemaAtivo = false;
         System.out.println("Sistema SHA finalizado completamente");
-    }
-    
-    /**
-     * Lista todos os SHAs ativos
-     */
-    public void listarSHAsAtivos() {
-        System.out.println("\n=== SHAs Ativos ===");
-        
-        if (hidrometrosAtivos.isEmpty()) {
-            System.out.println("  Nenhum SHA ativo no momento");
-            return;
-        }
-        
-        for (Map.Entry<String, Hidrometro> entry : hidrometrosAtivos.entrySet()) {
-            String id = entry.getKey();
-            Hidrometro h = entry.getValue();
-            ConfiguracaoDTO config = h.getConfig();
-            
-            System.out.println("\n  SHA: " + id);
-            System.out.println("    - Vazão entrada: " + config.vazaoEntrada() + " L/min");
-            System.out.println("    - Vazão saída: " + config.vazaoSaida() + " L/min");
-            System.out.println("    - Tipo fluido: " + config.tipoFluido());
-            System.out.println("    - Display: " + (janelasAtivas.containsKey(id) ? "VISÍVEL" : "OCULTO"));
-            System.out.println("    - Geração imagens: " + (schedulersImagens.containsKey(id) ? "ATIVA" : "INATIVA"));
-        }
-        
-        System.out.println("\n  Total: " + hidrometrosAtivos.size() + " SHA(s) ativo(s)");
     }
     
     /**

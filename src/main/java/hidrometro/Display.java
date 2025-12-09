@@ -258,11 +258,11 @@ public class Display extends JPanel {
         g2d.fillRect(displayX, displayY, displayWidth, displayHeight);
 
         g2d.setColor(Color.BLACK);
-        g2d.setFont(new Font("Courier", Font.BOLD, (int)(36 * scale)));
+        g2d.setFont(new Font("Arial", Font.BOLD, (int)(36 * scale)));
         String volumeStr = volumeExibido;
         FontMetrics fm = g2d.getFontMetrics();
         int textWidth = fm.stringWidth(volumeStr);
-        g2d.drawString(volumeStr, displayX + (displayWidth - textWidth) / 2, displayY + displayHeight / 2 + 16);
+        g2d.drawString(volumeStr, displayX + (displayWidth - textWidth) / 2, displayY + displayHeight / 2 + 16 - 10);
 
         int ponteiro1X = centerX - (int)(-5 * scale);
         int ponteiro1Y = centerY + (int)(146 * scale);
@@ -299,11 +299,6 @@ public class Display extends JPanel {
     }
 
     private String formatarVolume(double volume) {
-        // Hidrômetro analógico de 6 dígitos exibe metros cúbicos (m³)
-        // Os 6 dígitos representam: XXX.YYY m³ (3 inteiros + 3 decimais)
-        // Como o volume vem em litros, convertemos: 1 litro = 0.001 m³
-        // Multiplicamos por 1000 para obter os 6 dígitos
-        // Exemplo: 1.234 L = 0.001234 m³ → display "001234"
         int volumeInt = (int) Math.round(volume);
         return String.format("%06d", volumeInt);
     }

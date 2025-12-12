@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Especificação - Painel de Monitoramento de Hidrômetros</title>
+    <style>
+      @media print {
+        body {
+          margin: 0;
+          padding: 20mm;
+        }
+
+        .page-break {
+          page-break-before: always;
+        }
+
+        h1,
+        h2 {
+          page-break-after: avoid;
+        }
+
+        table,
+        figure {
+          page-break-inside: avoid;
+        }
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+        max-width: 210mm;
+        margin: 0 auto;
+        padding: 20px;
+        color: #333;
+      }
+
+      h1 {
+        color: #2c5f7c;
+        border-bottom: 3px solid #2c5f7c;
+        padding-bottom: 10px;
+        margin-top: 40px;
+      }
+
+      h2 {
+        color: #2c7c2c;
+        border-left: 5px solid #2c7c2c;
+        padding-left: 15px;
+        margin-top: 30px;
+      }
+
+      h3 {
+        color: #7c2c2c;
+        margin-top: 20px;
+      }
+
+      .cover-page {
+        text-align: center;
+        padding: 100px 20px;
+        min-height: 80vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+
+      .cover-page h1 {
+        font-size: 36px;
+        border: none;
+        color: #2c5f7c;
+      }
+
+      .cover-page .subtitle {
+        font-size: 24px;
+        color: #666;
+        margin: 20px 0;
+      }
+
+      .cover-page .info {
+        margin-top: 50px;
+        font-size: 18px;
+      }
+
+      .toc {
+        background: #f5f5f5;
+        padding: 20px;
+        border-radius: 5px;
+        margin: 30px 0;
+      }
+
+      .toc h2 {
+        border: none;
+        color: #2c5f7c;
+        padding: 0;
+      }
+
+      .toc ul {
+        list-style: none;
+        padding-left: 0;
+      }
+
+      .toc li {
+        margin: 10px 0;
+        padding-left: 20px;
+      }
+
+      .toc a {
+        color: #2c5f7c;
+        text-decoration: none;
+      }
+
+      .toc a:hover {
+        text-decoration: underline;
+      }
+
+      code {
+        background: #f4f4f4;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-family: "Courier New", monospace;
+        color: #d63384;
+      }
+
+      pre {
+        background: #f4f4f4;
+        padding: 15px;
+        border-radius: 5px;
+        overflow-x: auto;
+        border-left: 4px solid #2c5f7c;
+      }
+
+      .note {
+        background: #e8f4f8;
+        border-left: 5px solid #2c5f7c;
+        padding: 15px;
+        margin: 20px 0;
+        border-radius: 5px;
+      }
+
+      .warning {
+        background: #fff3cd;
+        border-left: 5px solid #ffc107;
+        padding: 15px;
+        margin: 20px 0;
+        border-radius: 5px;
+      }
+
+      .important {
+        background: #f8d7da;
+        border-left: 5px solid #dc3545;
+        padding: 15px;
+        margin: 20px 0;
+        border-radius: 5px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+      }
+
+      th {
+        background: #2c5f7c;
+        color: white;
+        padding: 12px;
+        text-align: left;
+      }
+
+      td {
+        padding: 10px;
+        border-bottom: 1px solid #ddd;
+      }
+
+      tr:hover {
+        background: #f5f5f5;
+      }
+
+      .button {
+        display: inline-block;
+        padding: 10px 20px;
+        background: #2c5f7c;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        margin: 10px 5px;
+      }
+
+      .button:hover {
+        background: #1e4558;
+      }
+
+      @media screen {
+        .print-buttons {
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          z-index: 1000;
+        }
+      }
+
+      @media print {
+        .print-buttons {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="print-buttons">
+      <button class="button" onclick="window.print()">🖨️ Imprimir/PDF</button>
+      <a class="button" href="especificacao-painel-monitoramento.md"
+        >📄 Ver Markdown</a
+      >
+    </div>
+
+    <!-- CAPA -->
+    <div class="cover-page">
+      <h1>Especificação de Requisitos</h1>
+      <div class="subtitle">
+        Painel de Monitoramento de Hidrômetros<br />
+        para Concessionária de Água (CAGEPA)
+      </div>
+      <div class="info">
+        <p><strong>Versão:</strong> 2.0</p>
+        <p><strong>Data:</strong> 18 de Novembro de 2025</p>
+        <p><strong>Instituição:</strong> IFPB - Instituto Federal da Paraíba</p>
+        <p><strong>Disciplina:</strong> Padrões de Projeto</p>
+      </div>
+    </div>
+
+    <div class="page-break"></div>
+
+    <!-- INSTRUÇÕES -->
+    <div class="note">
+      <h2>📖 Como usar este documento</h2>
+      <p>
+        Este é um documento HTML interativo que pode ser convertido em PDF de
+        duas formas:
+      </p>
+      <ol>
+        <li>
+          <strong>Imprimir do Navegador:</strong> Clique no botão "🖨️
+          Imprimir/PDF" no canto superior direito ou pressione
+          <code>Ctrl+P</code>, depois selecione "Salvar como PDF"
+        </li>
+        <li>
+          <strong>Ver Markdown Original:</strong> Clique no botão "📄 Ver
+          Markdown" para abrir o arquivo Markdown completo
+        </li>
+      </ol>
+      <p>
+        <strong>Nota:</strong> Os diagramas PlantUML estão em arquivos separados
+        na pasta <code>docs/</code>. Consulte o arquivo
+        <code>docs/README.md</code> para instruções de visualização.
+      </p>
+    </div>
+
+    <!-- SUMÁRIO -->
+    <div class="toc">
+      <h2>📋 Sumário</h2>
+      <ul>
+        <li><a href="#introducao">1. Introdução</a></li>
+        <li>
+          <a href="#requisitos-funcionais">2. Requisitos Funcionais</a>
+          <ul>
+            <li>
+              <a href="#gestao-usuarios"
+                >2.1 Gestão de Usuários e Contas (CRUD)</a
+              >
+            </li>
+            <li><a href="#monitoramento">2.2 Monitoramento de Consumo</a></li>
+            <li><a href="#alertas">2.3 Sistema de Alertas</a></li>
+            <li><a href="#relatorios">2.4 Relatórios e Auditoria</a></li>
+            <li><a href="#administracao">2.5 Administração e Segurança</a></li>
+          </ul>
+        </li>
+        <li>
+          <a href="#requisitos-nao-funcionais">3. Requisitos Não-Funcionais</a>
+        </li>
+        <li><a href="#arquitetura">4. Arquitetura do Sistema</a></li>
+        <li><a href="#fachada">5. Especificação da Fachada</a></li>
+        <li><a href="#armazenamento">6. Armazenamento de Dados</a></li>
+        <li><a href="#diagramas">7. Diagramas de Classes</a></li>
+        <li><a href="#casos-uso">8. Casos de Uso Detalhados</a></li>
+      </ul>
+    </div>
+
+    <div class="page-break"></div>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <h1 id="introducao">1. INTRODUÇÃO</h1>
+
+    <div class="important">
+      <strong>⚠️ DOCUMENTO COMPLETO</strong><br />
+      Para visualizar a especificação completa com todos os detalhes, requisitos
+      funcionais, diagramas de classes e casos de uso, consulte:
+      <ul>
+        <li>
+          <strong>Arquivo Markdown:</strong>
+          <code>docs/especificacao-painel-monitoramento.md</code>
+        </li>
+        <li>
+          <strong>Diagramas PlantUML:</strong> Pasta <code>docs/*.puml</code>
+        </li>
+        <li>
+          <strong>Guia de Visualização:</strong> <code>docs/README.md</code>
+        </li>
+      </ul>
+    </div>
+
+    <h2>1.1 Propósito</h2>
+    <p>
+      Este documento especifica os requisitos funcionais e não-funcionais para o
+      <strong>Painel de Monitoramento de Hidrômetros</strong>, um sistema
+      destinado à gestão e monitoramento de consumo de água através da análise
+      de imagens geradas por Sistemas de Hidrômetro de Água (SHA).
+    </p>
+
+    <h2>1.2 Escopo</h2>
+    <p>
+      O Painel de Monitoramento será utilizado pela CAGEPA (Companhia de Água e
+      Esgotos da Paraíba) para:
+    </p>
+    <ul>
+      <li>✅ Gerenciar usuários e suas contas de água</li>
+      <li>📊 Monitorar o consumo individualizado de água em tempo real</li>
+      <li>⚠️ Gerar alertas de consumo excessivo</li>
+      <li>📜 Manter histórico de consumo e auditoria</li>
+      <li>🔗 Integrar com sistemas externos (email, SMS, ERP)</li>
+    </ul>
+
+    <h2>1.3 Restrições Arquiteturais</h2>
+
+    <div class="warning">
+      <strong>⚠️ RESTRIÇÃO 1:</strong> O Painel <strong>NÃO PODE</strong> ter
+      acesso direto às funcionalidades internas dos SHA (Sistemas de Hidrômetro
+      de Água).
+    </div>
+
+    <div class="warning">
+      <strong>⚠️ RESTRIÇÃO 2:</strong> A leitura do consumo dos SHA pelo Painel
+      <strong>DEVE</strong> acontecer exclusivamente pela análise das imagens
+      geradas pelos SHA.
+    </div>
+
+    <div class="page-break"></div>
+
+    <h1 id="arquitetura">2. ARQUITETURA DO SISTEMA</h1>
+
+    <h2>2.1 Visão Geral dos Subsistemas</h2>
+
+    <p>
+      O Painel de Monitoramento é composto por
+      <strong>7 subsistemas principais</strong> orquestrados pela
+      <strong>Fachada</strong>:
+    </p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Subsistema</th>
+          <th>Responsabilidade</th>
+          <th>Padrões Aplicados</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Gestão de Usuários</strong></td>
+          <td>CRUD de usuários e hidrômetros</td>
+          <td>Repository, DTO, Validator, Factory</td>
+        </tr>
+        <tr>
+          <td><strong>Monitoramento de Consumo</strong></td>
+          <td>Análise e consulta de consumo</td>
+          <td>Strategy, Observer, Repository</td>
+        </tr>
+        <tr>
+          <td><strong>Sistema de Alertas</strong></td>
+          <td>Detecção e notificação de alertas</td>
+          <td>Chain of Responsibility, Observer</td>
+        </tr>
+        <tr>
+          <td><strong>Processamento de Imagens</strong></td>
+          <td>OCR e extração de dados</td>
+          <td>Template Method, Adapter, Scheduler</td>
+        </tr>
+        <tr>
+          <td><strong>Autenticação e Segurança</strong></td>
+          <td>Login, autorização, criptografia</td>
+          <td>Proxy, Decorator, Strategy, Singleton</td>
+        </tr>
+        <tr>
+          <td><strong>Persistência</strong></td>
+          <td>Acesso a dados</td>
+          <td>DAO, Repository, Unit of Work</td>
+        </tr>
+        <tr>
+          <td><strong>Logs e Auditoria</strong></td>
+          <td>Rastreamento de operações</td>
+          <td>Singleton, Observer</td>
+        </tr>
+        <tr>
+          <td><strong>Notificações</strong></td>
+          <td>Email, SMS, Push, Webhooks</td>
+          <td>Strategy, Template Method, Factory</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="page-break"></div>
+
+    <h1 id="diagramas">3. DIAGRAMAS DE CLASSES</h1>
+
+    <div class="note">
+      <h3>📊 Visualizando os Diagramas</h3>
+      <p>
+        Os diagramas de classes estão disponíveis em formato PlantUML na pasta
+        <code>docs/</code>:
+      </p>
+      <ul>
+        <li><code>diagrama-geral-subsistemas.puml</code> - Visão geral</li>
+        <li>
+          <code>subsistema-gestao-usuarios.puml</code> - Gestão de usuários
+        </li>
+        <li>
+          <code>subsistema-monitoramento-consumo.puml</code> - Monitoramento
+        </li>
+        <li><code>subsistema-alertas.puml</code> - Sistema de alertas</li>
+        <li><code>subsistema-processamento-imagens.puml</code> - OCR</li>
+        <li><code>subsistema-autenticacao-seguranca.puml</code> - Segurança</li>
+        <li><code>subsistema-notificacoes.puml</code> - Notificações</li>
+      </ul>
+
+      <p><strong>Como visualizar:</strong></p>
+      <ol>
+        <li>Instale a extensão PlantUML no VS Code</li>
+        <li>Abra qualquer arquivo <code>.puml</code></li>
+        <li>Pressione <code>Alt+D</code> para preview</li>
+      </ol>
+
+      <p>
+        Ou acesse online:
+        <a href="https://www.plantuml.com/plantuml/uml/" target="_blank"
+          >https://www.plantuml.com/plantuml/uml/</a
+        >
+      </p>
+    </div>
+
+    <h2>3.1 Diagrama Geral - Comunicação entre Subsistemas</h2>
+    <p>
+      O diagrama geral mostra a comunicação entre todos os subsistemas e a
+      Fachada.
+    </p>
+    <pre><code>Ver arquivo: docs/diagrama-geral-subsistemas.puml</code></pre>
+
+    <h2>3.2 Padrões de Projeto Utilizados</h2>
+
+    <h3>Padrões Estruturais</h3>
+    <ul>
+      <li>
+        <strong>Facade:</strong> Interface unificada (PainelMonitoramentoFacade)
+      </li>
+      <li><strong>Adapter:</strong> Adaptação de bibliotecas OCR</li>
+      <li><strong>Proxy:</strong> Controle de acesso a recursos</li>
+      <li><strong>Decorator:</strong> Camadas de segurança</li>
+    </ul>
+
+    <h3>Padrões Comportamentais</h3>
+    <ul>
+      <li>
+        <strong>Strategy:</strong> Múltiplas estratégias (análise, OCR,
+        notificação)
+      </li>
+      <li><strong>Observer:</strong> Notificação de eventos</li>
+      <li>
+        <strong>Template Method:</strong> Estrutura comum de processamento
+      </li>
+      <li><strong>Chain of Responsibility:</strong> Pipeline de validação</li>
+    </ul>
+
+    <h3>Padrões Criacionais</h3>
+    <ul>
+      <li><strong>Singleton:</strong> Fachada, gerenciadores únicos</li>
+      <li><strong>Factory:</strong> Criação de objetos complexos</li>
+      <li><strong>Builder:</strong> Construção de relatórios</li>
+    </ul>
+
+    <div class="page-break"></div>
+
+    <h1 id="fachada">4. ESPECIFICAÇÃO DA FACHADA</h1>
+
+    <h2>4.1 Classe: PainelMonitoramentoFacade</h2>
+
+    <div class="important">
+      <strong>🏛️ PADRÃO FACADE + SINGLETON</strong><br />
+      A Fachada é o <strong>único ponto de entrada</strong> para todas as
+      funcionalidades do Painel.
+    </div>
+
+    <h3>Métodos Principais:</h3>
+
+    <h4>Gestão de Usuários</h4>
+    <pre><code>UsuarioDTO cadastrarUsuario(DadosCadastroUsuario dados)
+UsuarioDTO consultarUsuario(String cpfCnpj)
+UsuarioDTO atualizarUsuario(String cpfCnpj, DadosAtualizacaoUsuario dados)
+boolean desativarUsuario(String cpfCnpj)
+List&lt;UsuarioDTO&gt; listarUsuarios(FiltroBuscaUsuario filtro)</code></pre>
+
+    <h4>Gestão de Hidrômetros</h4>
+    <pre><code>HidrometroDTO associarHidrometro(String cpfUsuario, DadosHidrometro dados)
+boolean desassociarHidrometro(String idHidrometro)
+List&lt;HidrometroDTO&gt; listarHidrometrosUsuario(String cpfCnpj)</code></pre>
+
+    <h4>Monitoramento de Consumo</h4>
+    <pre><code>ConsumoAtualDTO monitorarConsumoSHA(String idHidrometro)
+ConsumoConsolidadoDTO monitorarConsumoUsuario(String cpfUsuario)
+RelatorioConsumoDTO gerarRelatorioConsumo(FiltroRelatorio filtro)</code></pre>
+
+    <h4>Sistema de Alertas</h4>
+    <pre><code>AlertaDTO configurarAlerta(String cpf, ConfiguracaoAlerta config)
+List&lt;AlertaDTO&gt; listarAlertasAtivos(String cpf)
+List&lt;AlertaDTO&gt; listarAlertasConcessionaria(FiltroAlerta filtro)</code></pre>
+
+    <h4>Administração</h4>
+    <pre><code>boolean autenticar(String login, String senha)
+void logout()
+UsuarioSistemaDTO cadastrarOperador(DadosOperador dados, PerfilAcesso perfil)</code></pre>
+
+    <div class="page-break"></div>
+
+    <h1>5. TECNOLOGIAS RECOMENDADAS</h1>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Componente</th>
+          <th>Tecnologia</th>
+          <th>Observação</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Backend</strong></td>
+          <td>Java 17+ / Spring Boot 3.x</td>
+          <td>Framework principal</td>
+        </tr>
+        <tr>
+          <td><strong>Frontend</strong></td>
+          <td>React.js / Vue.js</td>
+          <td>Interface web moderna</td>
+        </tr>
+        <tr>
+          <td><strong>Banco de Dados</strong></td>
+          <td>PostgreSQL 14+</td>
+          <td>Dados principais</td>
+        </tr>
+        <tr>
+          <td><strong>Cache</strong></td>
+          <td>Redis</td>
+          <td>Dados em tempo real</td>
+        </tr>
+        <tr>
+          <td><strong>OCR</strong></td>
+          <td>Tesseract / Google Vision</td>
+          <td>Extração de texto de imagens</td>
+        </tr>
+        <tr>
+          <td><strong>Email</strong></td>
+          <td>JavaMail</td>
+          <td>Envio de notificações</td>
+        </tr>
+        <tr>
+          <td><strong>SMS</strong></td>
+          <td>Twilio API</td>
+          <td>Notificações por SMS</td>
+        </tr>
+        <tr>
+          <td><strong>Push</strong></td>
+          <td>Firebase Cloud Messaging</td>
+          <td>Notificações mobile</td>
+        </tr>
+        <tr>
+          <td><strong>Logs</strong></td>
+          <td>SLF4J + Logback</td>
+          <td>Sistema de logs</td>
+        </tr>
+        <tr>
+          <td><strong>Segurança</strong></td>
+          <td>Spring Security + JWT</td>
+          <td>Autenticação e autorização</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="page-break"></div>
+
+    <h1>6. CHECKLIST DE IMPLEMENTAÇÃO</h1>
+
+    <h2>Fase 1: Fundação (Sprints 1-2)</h2>
+    <ul>
+      <li>☐ Configurar projeto Spring Boot</li>
+      <li>☐ Configurar banco de dados PostgreSQL</li>
+      <li>☐ Implementar Fachada (PainelMonitoramentoFacade)</li>
+      <li>☐ Implementar Subsistema de Persistência</li>
+      <li>☐ Implementar Subsistema de Logs</li>
+    </ul>
+
+    <h2>Fase 2: Gestão de Usuários (Sprint 3)</h2>
+    <ul>
+      <li>☐ Implementar CRUD de usuários</li>
+      <li>☐ Implementar CRUD de hidrômetros</li>
+      <li>☐ Implementar validações</li>
+      <li>☐ Testes unitários</li>
+    </ul>
+
+    <h2>Fase 3: Processamento de Imagens (Sprints 4-5)</h2>
+    <ul>
+      <li>☐ Integrar Tesseract OCR</li>
+      <li>☐ Implementar pipeline de processamento</li>
+      <li>☐ Implementar scheduler</li>
+      <li>☐ Validação de dados extraídos</li>
+    </ul>
+
+    <h2>Fase 4: Monitoramento (Sprint 6)</h2>
+    <ul>
+      <li>☐ Implementar consultas de consumo</li>
+      <li>☐ Implementar agregações</li>
+      <li>☐ Implementar geração de gráficos</li>
+      <li>☐ Dashboard em tempo real</li>
+    </ul>
+
+    <h2>Fase 5: Sistema de Alertas (Sprint 7)</h2>
+    <ul>
+      <li>☐ Implementar regras de alertas</li>
+      <li>☐ Implementar detecção de violações</li>
+      <li>☐ Integrar com notificações</li>
+    </ul>
+
+    <div class="note">
+      <p>
+        <strong>Nota:</strong> Para o checklist completo com todas as 10 fases,
+        consulte o arquivo
+        <code>docs/especificacao-painel-monitoramento.md</code>
+      </p>
+    </div>
+
+    <div class="page-break"></div>
+
+    <h1>7. REFERÊNCIAS E RECURSOS</h1>
+
+    <h2>7.1 Documentação do Projeto</h2>
+    <ul>
+      <li>
+        📄 <strong>Especificação Completa:</strong>
+        <code>docs/especificacao-painel-monitoramento.md</code>
+      </li>
+      <li>📊 <strong>Diagramas PlantUML:</strong> <code>docs/*.puml</code></li>
+      <li>
+        📖 <strong>Guia de Visualização:</strong> <code>docs/README.md</code>
+      </li>
+      <li>
+        🔧 <strong>Script Geração PDF:</strong> <code>gerar-pdf.sh</code> /
+        <code>gerar-pdf.ps1</code>
+      </li>
+    </ul>
+
+    <h2>7.2 Padrões de Projeto</h2>
+    <ul>
+      <li>
+        GAMMA, Erich et al.
+        <strong
+          >Design Patterns: Elements of Reusable Object-Oriented
+          Software</strong
+        >. Addison-Wesley, 1994.
+      </li>
+      <li>
+        FOWLER, Martin.
+        <strong>Patterns of Enterprise Application Architecture</strong>.
+        Addison-Wesley, 2002.
+      </li>
+    </ul>
+
+    <h2>7.3 Tecnologias</h2>
+    <ul>
+      <li>
+        Spring Framework:
+        <a href="https://spring.io/projects/spring-boot" target="_blank"
+          >https://spring.io/projects/spring-boot</a
+        >
+      </li>
+      <li>
+        Tesseract OCR:
+        <a href="https://github.com/tesseract-ocr/tesseract" target="_blank"
+          >https://github.com/tesseract-ocr/tesseract</a
+        >
+      </li>
+      <li>
+        PostgreSQL:
+        <a href="https://www.postgresql.org/" target="_blank"
+          >https://www.postgresql.org/</a
+        >
+      </li>
+    </ul>
+
+    <h2>7.4 Ferramentas de Diagramação</h2>
+    <ul>
+      <li>
+        PlantUML:
+        <a href="https://plantuml.com/" target="_blank"
+          >https://plantuml.com/</a
+        >
+      </li>
+      <li>
+        PlantUML Web Editor:
+        <a href="https://www.plantuml.com/plantuml/uml/" target="_blank"
+          >https://www.plantuml.com/plantuml/uml/</a
+        >
+      </li>
+    </ul>
+
+    <div class="page-break"></div>
+
+    <footer
+      style="
+        text-align: center;
+        margin-top: 50px;
+        padding-top: 20px;
+        border-top: 2px solid #ccc;
+      ">
+      <p>
+        <strong
+          >Especificação de Requisitos - Painel de Monitoramento de
+          Hidrômetros</strong
+        >
+      </p>
+      <p>Versão 2.0 | 18 de Novembro de 2025</p>
+      <p>
+        IFPB - Instituto Federal da Paraíba | Disciplina: Padrões de Projeto
+      </p>
+      <p style="margin-top: 20px; color: #666">
+        Este documento foi gerado a partir da especificação completa disponível
+        em<br />
+        <code>docs/especificacao-painel-monitoramento.md</code>
+      </p>
+    </footer>
+  </body>
+</html>

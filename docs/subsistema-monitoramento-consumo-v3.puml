@@ -1,0 +1,225 @@
+@startuml Subsistema - Monitoramento de Consumo
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam classBackgroundColor #E8F8E8
+skinparam classBorderColor #2C7C2C
+
+title Subsistema 2: Monitoramento de Consumo
+
+' ========== PADRÕES APLICADOS ==========
+note as PadroesAplicados
+    **PADRÕES DE PROJETO APLICADOS:**
+    
+    1. **Strategy Pattern** - Diferentes estratégias de análise de consumo
+    2. **Observer Pattern** - Notificação quando novos dados são processados
+
+end note
+
+' ========== ENTIDADE PRINCIPAL ==========
+
+class Leitura {
+    - idLeitura: Long {PK}
+    - idHidrometro: String {FK}
+    - timestamp: LocalDateTime
+    - vazaoLMin: double
+    - volumeTotalLitros: double
+    - pressaoBar: double
+    - imagemOrigemPath: String
+    __
+    + getId(): Long
+    + getVazao(): double
+    + getVolume(): double
+}
+
+' ========== CAMADA DE SERVIÇO ==========
+
+class ConsumoService {
+    - consumoRepository: ConsumoRepository
+    - hidrometroRepository: HidrometroRepository
+    - clienteRepository: ClienteRepository
+    - analisadorFactory: AnalisadorFactory
+    - observadores: List<ConsumoObserver>
+    __
+    + obterConsumoAtualSHA(idHidrometro): ConsumoAtualDTO
+    + obterConsumoCliente(cpfCliente): ConsumoConsolidadoDTO
+    + consultarHistorico(id, inicio, fim): List<Leitura>
+    + analisarConsumo(id, tipoAnalise): ResultadoAnalise
+    + registrarObservador(obs: ConsumoObserver): void
+    - notificarObservadores(leitura: Leitura): void
+}
+
+' ========== STRATEGY PATTERN ==========
+
+interface AnalisadorConsumo <<Strategy>> {
+    + analisar(leituras: List<Leitura>): ResultadoAnalise
+}
+
+class AnalisadorConsumoDiario implements AnalisadorConsumo {
+    __
+    + analisar(leituras): ResultadoAnalise
+    - calcularTotalDia(): double
+    - calcularMediaDia(): double
+    - identificarHorarioPico(): String
+}
+
+class AnalisadorConsumoMensal implements AnalisadorConsumo {
+    __
+    + analisar(leituras): ResultadoAnalise
+    - calcularTotalMes(): double
+    - calcularMediaDiaria(): double
+    - calcularProjecaoMes(): double
+    - compararMesAnterior(): double
+}
+
+class AnalisadorConsumoCliente implements AnalisadorConsumo {
+    __
+    + analisar(leituras): ResultadoAnalise
+    - consolidarTodosSHAs(): double
+    - calcularPorSHA(): Map<String, Double>
+    - compararComMedia(): double
+}
+
+class AnalisadorFactory {
+    + criar(tipo: TipoAnalise): AnalisadorConsumo
+}
+
+enum TipoAnalise {
+    DIARIO
+    MENSAL
+    POR_CLIENTE
+}
+
+class ResultadoAnalise {
+    - totalConsumoM3: double
+    - mediaConsumo: double
+    - periodoAnalise: String
+    - detalhes: Map<String, Object>
+    __
+    + getTotalConsumo(): double
+    + getMedia(): double
+}
+
+' ========== OBSERVER PATTERN ==========
+
+interface ConsumoObserver {
+    + onNovaLeitura(leitura: Leitura): void
+}
+
+class AlertaServiceObserver implements ConsumoObserver {
+    - alertaService: AlertaService
+    __
+    + onNovaLeitura(leitura: Leitura): void
+}
+
+class LogObserver implements ConsumoObserver {
+    __
+    + onNovaLeitura(leitura: Leitura): void
+    - registrarLogLeitura(): void
+}
+
+' ========== DTOs ==========
+
+class ConsumoAtualDTO <<DTO>> {
+    + idHidrometro: String
+    + vazaoAtualLMin: double
+    + volumeAcumuladoDiaM3: double
+    + volumeAcumuladoMesM3: double
+    + pressaoAtualBar: double
+    + timestampUltimaLeitura: String
+    + statusHidrometro: String
+}
+
+class ConsumoConsolidadoDTO <<DTO>> {
+    + cpfCliente: String
+    + nomeCliente: String
+    + totalConsumoMesM3: double
+    + consumoPorSHA: List<ConsumoSHADTO>
+    + projecaoMensalM3: double
+    + comparativoMesAnterior: double
+}
+
+class ConsumoSHADTO <<DTO>> {
+    + idHidrometro: String
+    + endereco: String
+    + consumoM3: double
+}
+
+' ========== REPOSITORIES ==========
+
+interface ConsumoRepository {
+    + salvar(leitura: Leitura): Leitura
+    + buscarPorHidrometro(id, inicio, fim): List<Leitura>
+    + buscarUltimaLeitura(id): Optional<Leitura>
+    + calcularTotalPeriodo(id, inicio, fim): double
+    + contarLeiturasDia(id, data): int
+}
+
+' ========== RELACIONAMENTOS ==========
+
+ConsumoService --> ConsumoRepository
+ConsumoService --> HidrometroRepository
+ConsumoService --> ClienteRepository
+ConsumoService --> AnalisadorFactory
+ConsumoService --> ConsumoObserver : notifica
+
+AnalisadorFactory ..> AnalisadorConsumo : cria
+AnalisadorConsumoDiario ..|> AnalisadorConsumo
+AnalisadorConsumoMensal ..|> AnalisadorConsumo
+AnalisadorConsumoCliente ..|> AnalisadorConsumo
+
+AlertaServiceObserver ..|> ConsumoObserver
+LogObserver ..|> ConsumoObserver
+
+ConsumoService ..> ConsumoAtualDTO : retorna
+ConsumoService ..> ConsumoConsolidadoDTO : retorna
+ConsumoRepository ..> Leitura : persiste
+
+note right of AnalisadorFactory
+    **STRATEGY + FACTORY**
+    
+    Factory cria estratégia adequada:
+    - DIARIO → AnalisadorConsumoDiario
+    - MENSAL → AnalisadorConsumoMensal
+    - POR_CLIENTE → AnalisadorConsumoCliente
+end note
+
+note left of AlertaServiceObserver
+    **OBSERVER PATTERN**
+    
+    Quando nova leitura é salva:
+    1. ConsumoService notifica observers
+    2. AlertaService verifica limites
+    3. LogObserver registra auditoria
+    
+    Obs: Cliente (API/CLI) consulta
+    via Fachada quando necessário.
+end note
+
+note bottom of ConsumoRepository
+    **REPOSITORY PATTERN**
+    
+    Consultas otimizadas:
+    - Última leitura (cache em memória)
+    - Período específico (índice por timestamp)
+    - Total período (query agregada)
+end note
+
+' ========== FLUXO DE ANÁLISE ==========
+
+note as FluxoAnalise
+    **FLUXO DE ANÁLISE DE CONSUMO:**
+    
+    1. Admin solicita análise mensal do SHA-001
+    2. ConsumoService recebe requisição
+    3. AnalisadorFactory.criar(MENSAL)
+    4. ConsumoRepository.buscarPorHidrometro(SHA-001, inicio, fim)
+    5. AnalisadorConsumoMensal.analisar(leituras)
+       - Calcula total do mês
+       - Calcula média diária
+       - Compara com mês anterior
+    6. Retorna ResultadoAnalise
+    7. ConsumoService converte para DTO
+    8. Retorna ao Admin
+end note
+
+@enduml

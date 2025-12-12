@@ -1,0 +1,169 @@
+@startuml Subsistema - Processamento de Imagens (OCR)
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam classBackgroundColor #E8E8F8
+skinparam classBorderColor #2C2C7C
+
+title Subsistema 4: Processamento de Imagens com OCR
+
+' ========== PADRÕES APLICADOS ==========
+note as PadroesAplicados
+    **PADRÕES DE PROJETO APLICADOS:**
+    
+    1. **Template Method** - Pipeline fixo de processamento
+    2. **Adapter Pattern** - Adaptação do Tesseract OCR
+
+end note
+
+' ========== CAMADA DE SERVIÇO ==========
+
+class ProcessamentoImagensService {
+    - imagemProcessor: ImagemProcessorTemplate
+    - consumoRepository: ConsumoRepository
+    - hidrometroRepository: HidrometroRepository
+    - alertaService: AlertaService
+    - diretorioImagensSHA: String
+    __
+    + processarImagensPendentes(): void
+    + processarManual(idHidrometro, path): Leitura
+    + consultarStatusProcessamento(): StatusProcessamentoDTO
+}
+
+class ConfiguracaoProcessamento {
+    - diretorioImagensSHA: String
+    - diretorioProcessadas: String
+    - diretorioErros: String
+    - intervaloMinutos: int
+    __
+    + getDiretorioImagensSHA(): String
+}
+
+' ========== TEMPLATE METHOD: Pipeline de Processamento ==========
+
+abstract class ImagemProcessorTemplate {
+    # ocrAdapter: OCRAdapter
+    __
+    + processar(path: String, idHidrometro: String): Leitura {template}
+    # abstract lerImagem(path: String): BufferedImage
+    # abstract preprocessarImagem(img: BufferedImage): BufferedImage
+    # aplicarOCR(img: BufferedImage): String
+    # abstract extrairDados(texto: String): DadosOCR
+    # abstract validarDados(dados: DadosOCR): boolean
+    # abstract persistirDados(dados: DadosOCR, idHidrometro): Leitura
+    # moverArquivoProcessado(path: String): void
+}
+
+class ImagemProcessor extends ImagemProcessorTemplate {
+    __
+    # lerImagem(path: String): BufferedImage
+    # preprocessarImagem(img): BufferedImage
+    # extrairDados(texto: String): DadosOCR
+    # validarDados(dados): boolean
+    # persistirDados(dados, idHidrometro): Leitura
+    - aplicarBinarizacao(img): BufferedImage
+    - aumentarContraste(img): BufferedImage
+    - parsearVazao(texto): double
+    - parsearVolume(texto): double
+    - parsearPressao(texto): double
+}
+
+class DadosOCR {
+    + vazaoLMin: double
+    + volumeTotalLitros: double
+    + pressaoBar: double
+    + timestamp: LocalDateTime
+    + confianca: double
+    __
+    + isValido(): boolean
+}
+
+' ========== ADAPTER PATTERN: OCR ==========
+
+interface OCRAdapter {
+    + extrairTexto(imagem: BufferedImage): String
+    + configurar(parametros: Map): void
+}
+
+class TesseractOCRAdapter implements OCRAdapter {
+    - tesseract: Tesseract
+    - idioma: String
+    __
+    + extrairTexto(imagem: BufferedImage): String
+    + configurar(parametros: Map): void
+    - inicializarTesseract(): void
+    - aplicarConfiguracoes(): void
+}
+
+' ========== VALIDATORS ==========
+
+class DadosConsumoValidator {
+    + validar(dados: DadosOCR): boolean
+    - validarVazao(vazao: double): boolean
+    - validarVolume(volume: double): boolean
+    - validarPressao(pressao: double): boolean
+    - validarCoerenciaComHistorico(dados): boolean
+}
+
+' ========== DTOs ==========
+
+class StatusProcessamentoDTO <<DTO>> {
+    + totalImagensPendentes: int
+    + imagensProcessadasHoje: int
+    + imagensComErro: int
+    + ultimoProcessamento: String
+    + proximoProcessamento: String
+}
+
+' ========== EXCEÇÕES ==========
+
+class ProcessamentoException extends RuntimeException {
+    + ProcessamentoException(msg: String)
+}
+
+class OCRException extends ProcessamentoException
+class ImagemInvalidaException extends ProcessamentoException
+class DadosInvalidosException extends ProcessamentoException
+
+' ========== RELACIONAMENTOS ==========
+
+ProcessamentoImagensService --> ImagemProcessorTemplate
+ProcessamentoImagensService --> ConsumoRepository
+ProcessamentoImagensService --> ConfiguracaoProcessamento
+
+ImagemProcessor --|> ImagemProcessorTemplate
+ImagemProcessorTemplate --> OCRAdapter : usa
+ImagemProcessorTemplate --> DadosConsumoValidator
+
+TesseractOCRAdapter ..|> OCRAdapter
+
+ImagemProcessor ..> DadosOCR : cria
+ImagemProcessor ..> Leitura : persiste
+
+ProcessamentoImagensService ..> ProcessamentoException : lança
+
+' ========== NOTAS EXPLICATIVAS ==========
+
+note right of ImagemProcessorTemplate
+    **TEMPLATE METHOD**
+    
+    Pipeline fixo (não pode mudar ordem):
+    1. lerImagem()
+    2. preprocessarImagem()
+    3. aplicarOCR()
+    4. extrairDados()
+    5. validarDados()
+    6. persistirDados()
+    
+    Subclasses implementam passos específicos
+end note
+
+note left of TesseractOCRAdapter
+    **ADAPTER PATTERN**
+    
+    Adapta biblioteca Tesseract OCR
+    para interface padrão do sistema.
+    
+    Permite trocar biblioteca OCR
+    sem alterar código do processador.
+end note
+@enduml

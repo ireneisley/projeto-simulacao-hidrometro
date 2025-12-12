@@ -1,0 +1,255 @@
+@startuml Subsistema - Autenticação JWT (Apenas Admin)
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam classBackgroundColor #E8E8F8
+skinparam classBorderColor #2C2C7C
+
+title Subsistema 5: Autenticação JWT - Apenas Admin
+
+' ========== PADRÕES APLICADOS ==========
+note as PadroesAplicados
+    **PADRÕES DE PROJETO APLICADOS:**
+    
+    1. **Singleton Pattern** - JwtTokenService (gerenciamento centralizado de tokens)
+    2. **Proxy Pattern** - AuthenticationProxy (controle de acesso a métodos da Fachada)
+
+end note
+
+' ========== ENTIDADE ADMIN ==========
+
+class Admin {
+    - idAdmin: Long {PK}
+    - username: String {unique}
+    - senhaHash: String
+    - nome: String
+    - email: String
+    - status: StatusAdmin
+    - dataCriacao: LocalDateTime
+    - ultimoAcesso: LocalDateTime
+    __
+    + getUsername(): String
+    + getNome(): String
+    + isAtivo(): boolean
+    + atualizarUltimoAcesso(): void
+}
+
+enum StatusAdmin {
+    ATIVO
+    INATIVO
+    BLOQUEADO
+}
+
+' ========== CAMADA DE SERVIÇO ==========
+
+class AutenticacaoService {
+    - adminRepository: AdminRepository
+    - jwtTokenService: JwtTokenService
+    - logRepository: LogRepository
+    __
+    + login(username, senha): TokenDTO
+    + validarToken(token: String): boolean
+    + renovarToken(tokenAntigo: String): TokenDTO
+    + logout(token: String): void
+    + obterAdminDoToken(token: String): AdminDTO
+    - validarCredenciais(username, senha): Admin
+    - verificarSenha(senha, hash): boolean
+    - hashearSenha(senha): String
+    - registrarLog(admin, acao): void
+}
+
+' ========== SINGLETON: JWT Token Service ==========
+
+class JwtTokenService <<Singleton>> {
+    - {static} instance: JwtTokenService
+    - secretKey: String
+    - validadeHoras: int = 8
+    - algorithm: Algorithm
+    __
+    - JwtTokenService()
+    + {static} getInstance(): JwtTokenService
+    + gerarToken(admin: Admin): String
+    + validarToken(token: String): boolean
+    + extrairUsername(token: String): String
+    + extrairClaims(token: String): Map<String, Object>
+    + isTokenExpirado(token: String): boolean
+    - criarToken(claims, subject): String
+}
+
+class TokenInfo {
+    + username: String
+    + nome: String
+    + dataCriacao: LocalDateTime
+    + dataExpiracao: LocalDateTime
+    + claims: Map<String, Object>
+    __
+    + isValido(): boolean
+}
+
+' ========== PROXY PATTERN: Controle de Acesso ==========
+
+class AuthenticationProxy <<Proxy>> {
+    - jwtTokenService: JwtTokenService
+    - autenticacaoService: AutenticacaoService
+    - fachada: PainelMonitoramentoFacade
+    __
+    + executarComAutenticacao(token, operacao): Object
+    - validarTokenEPermissao(token: String): boolean
+    - extrairAdminDoToken(token: String): Admin
+    - verificarPermissao(admin, operacao): boolean
+    - lancarErroAutenticacao(): void
+}
+
+class Operacao {
+    + nomeMetodo: String
+    + parametros: Object[]
+    + requererAutenticacao: boolean
+    __
+    + executar(): Object
+}
+
+' ========== VALIDATORS ==========
+
+class CredenciaisValidator {
+    + validarUsername(username: String): boolean
+    + validarSenha(senha: String): boolean
+    - validarFormatoEmail(email: String): boolean
+}
+
+' ========== DTOs ==========
+
+class LoginRequestDTO <<DTO>> {
+    + username: String
+    + senha: String
+}
+
+class TokenDTO <<DTO>> {
+    + token: String
+    + tipo: String = "Bearer"
+    + expiraEm: long
+    + adminNome: String
+}
+
+class AdminDTO <<DTO>> {
+    + idAdmin: Long
+    + username: String
+    + nome: String
+    + email: String
+    + status: String
+}
+
+' ========== REPOSITORIES ==========
+
+interface AdminRepository {
+    + salvar(admin: Admin): Admin
+    + buscarPorUsername(username: String): Optional<Admin>
+    + buscarPorId(id: Long): Optional<Admin>
+    + listarAtivos(): List<Admin>
+    + existePorUsername(username: String): boolean
+}
+
+interface LogRepository {
+    + registrar(log: Log): void
+    + buscarPorAdmin(idAdmin: Long): List<Log>
+}
+
+' ========== EXCEÇÕES ==========
+
+class AutenticacaoException extends RuntimeException {
+    + AutenticacaoException(msg: String)
+}
+
+class CredenciaisInvalidasException extends AutenticacaoException
+class TokenInvalidoException extends AutenticacaoException
+class TokenExpiradoException extends AutenticacaoException
+class AdminInativoException extends AutenticacaoException
+class AcessoNegadoException extends RuntimeException
+
+' ========== RELACIONAMENTOS ==========
+
+' Entidade
+Admin -- StatusAdmin
+
+' Serviço
+AutenticacaoService --> AdminRepository
+AutenticacaoService --> JwtTokenService : usa singleton
+AutenticacaoService --> LogRepository
+AutenticacaoService ..> Admin : valida
+AutenticacaoService ..> TokenDTO : retorna
+
+' Singleton
+JwtTokenService ..> TokenInfo : cria
+JwtTokenService ..> Admin : gera token para
+
+' Proxy Pattern
+AuthenticationProxy --> JwtTokenService : valida com
+AuthenticationProxy --> AutenticacaoService : consulta
+AuthenticationProxy ..> Operacao : executa
+
+' Validators
+AutenticacaoService --> CredenciaisValidator
+
+' DTOs
+AutenticacaoService ..> LoginRequestDTO : recebe
+AutenticacaoService ..> AdminDTO : retorna
+
+' Exceções
+AutenticacaoService ..> AutenticacaoException : lança
+JwtTokenService ..> TokenInvalidoException : lança
+AuthenticationProxy ..> AcessoNegadoException : lança
+
+' ========== NOTAS EXPLICATIVAS ==========
+
+note right of JwtTokenService
+    **SINGLETON PATTERN**
+    
+    Instância única para todo sistema.
+    Centraliza:
+    - Geração de tokens
+    - Validação de tokens
+    - Extração de claims
+    - Gerenciamento de chave secreta
+    
+    Thread-safe.
+end note
+
+note left of AuthenticationProxy
+    **PROXY PATTERN**
+    
+    Controla acesso aos métodos da Fachada.
+    Funciona para qualquer tipo de cliente:
+    - CLI: passa token via argumento
+    - API: extrai token do header
+    - Desktop: armazena token em memória
+    - Chamada direta: valida antes de executar
+    
+    Fluxo:
+    1. Cliente chama método da Fachada
+    2. Proxy intercepta chamada
+    3. Valida token JWT
+    4. SE válido: executa método
+    5. SE inválido: lança AcessoNegadoException
+end note
+
+note bottom of AdminRepository
+    **REPOSITORY PATTERN**
+    
+    Implementação:
+    - Interface genérica
+    - Pode usar JDBC, JPA
+    - Queries personalizadas
+    
+    Única entidade com login no sistema.
+end note
+
+note right of AutenticacaoService
+    **SEGURANÇA**
+    
+    - Senhas com BCrypt (biblioteca jBCrypt)
+    - Tokens JWT assinados (biblioteca jjwt)
+    - Algoritmo: HMAC256
+    - Logs de todas tentativas de login
+    - Validação de status ATIVO
+    - Renovação de token antes de expirar
+end note
+
+@enduml

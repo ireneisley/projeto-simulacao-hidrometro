@@ -7,7 +7,8 @@ import java.awt.image.BufferedImage;
 
 public class Display extends JPanel {
     private double vazaoExibida;
-    private double volumeExibido;
+    private String volumeExibido;
+    private double volumeDouble;
     private double pressaoExibida;
     private String statusConexao;
     private boolean faltaAgua;
@@ -22,7 +23,8 @@ public class Display extends JPanel {
 
     public Display() {
         this.vazaoExibida = 0.0;
-        this.volumeExibido = 0.0;
+        this.volumeExibido = "000000";
+        this.volumeDouble = 0.0;
         this.pressaoExibida = 0.0;
         this.statusConexao = "Conectado";
         this.faltaAgua = false;
@@ -34,11 +36,13 @@ public class Display extends JPanel {
     private void inicializarInterface() {
         frame = new JFrame("Simulador de Hidrômetro");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(600, 500);
+        frame.setSize(800, 600);  // Tamanho maior e fixo
+        frame.setMinimumSize(new Dimension(800, 600));  // Define tamanho mínimo
         frame.setLocationRelativeTo(null);
 
         setLayout(new BorderLayout());
         setBackground(Color.WHITE);
+        setPreferredSize(new Dimension(800, 600));  // Define tamanho preferido do painel
 
         // Painel de informações
         JPanel painelInfo = new JPanel(new GridLayout(4, 1, 25, 30));
@@ -79,7 +83,7 @@ public class Display extends JPanel {
         sliderVazao.addChangeListener(e -> {
             if (!faltaAgua) {
                 double novaVazao = sliderVazao.getValue() / 10.0;
-                atualizarDisplay(novaVazao, volumeExibido, pressaoExibida);
+                atualizarDisplay(novaVazao, volumeDouble, pressaoExibida);
             } else {
                 sliderVazao.setValue(0); // trava em 0 se faltar água
             }
@@ -134,7 +138,8 @@ public class Display extends JPanel {
 
     public void atualizarDisplay(double vazao, double volume, double pressao) {
         this.vazaoExibida = vazao;
-        this.volumeExibido = volume;
+        this.volumeDouble = volume;
+        this.volumeExibido = formatarVolume(volume);
         this.pressaoExibida = pressao;
 
         if (vazao <= 0) {
@@ -191,7 +196,7 @@ public class Display extends JPanel {
             );
             labelVolume.setText(
                 fmtLinha("Volume", "",
-                        String.format("%.3f", volumeExibido),
+                        volumeExibido,
                         "L", corVolume)
             );
             labelPressao.setText(
@@ -253,11 +258,11 @@ public class Display extends JPanel {
         g2d.fillRect(displayX, displayY, displayWidth, displayHeight);
 
         g2d.setColor(Color.BLACK);
-        g2d.setFont(new Font("Courier", Font.BOLD, (int)(36 * scale)));
-        String volumeStr = String.format("%.3f", volumeExibido / 1000.0);
+        g2d.setFont(new Font("Arial", Font.BOLD, (int)(36 * scale)));
+        String volumeStr = volumeExibido;
         FontMetrics fm = g2d.getFontMetrics();
         int textWidth = fm.stringWidth(volumeStr);
-        g2d.drawString(volumeStr, displayX + (displayWidth - textWidth) / 2, displayY + displayHeight / 2 + 16);
+        g2d.drawString(volumeStr, displayX + (displayWidth - textWidth) / 2, displayY + displayHeight / 2 + 16 - 10);
 
         int ponteiro1X = centerX - (int)(-5 * scale);
         int ponteiro1Y = centerY + (int)(146 * scale);
@@ -291,5 +296,10 @@ public class Display extends JPanel {
 
     public void ocultarInterface() {
         SwingUtilities.invokeLater(() -> frame.setVisible(false));
+    }
+
+    private String formatarVolume(double volume) {
+        int volumeInt = (int) Math.round(volume);
+        return String.format("%06d", volumeInt);
     }
 }

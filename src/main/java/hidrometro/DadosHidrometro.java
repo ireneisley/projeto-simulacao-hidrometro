@@ -11,11 +11,15 @@ public class DadosHidrometro {
     private boolean statusAgua;
     
     public DadosHidrometro(double vazao, double volume, double pressao) {
+        this(vazao, volume, pressao, vazao > 0, System.currentTimeMillis());
+    }
+    
+    public DadosHidrometro(double vazao, double volume, double pressao, boolean statusAgua, long timestamp) {
         this.vazao = vazao;
         this.volume = volume;
         this.pressao = pressao;
-        this.timestamp = System.currentTimeMillis();
-        this.statusAgua = vazao > 0;
+        this.statusAgua = statusAgua;
+        this.timestamp = timestamp;
     }
     
     public double getVazao() {

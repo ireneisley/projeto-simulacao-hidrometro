@@ -1,0 +1,156 @@
+@startuml Fluxo Completo - Processamento OCR e Geração de Alerta
+!theme plain
+skinparam backgroundColor #FFFFFF
+
+title Fluxo Completo: Processamento de Imagem OCR → Alerta → Notificação
+
+actor "Cliente\n(API/CLI/etc)" as Admin
+participant "<<Scheduler>>\nSpring" as Scheduler
+participant ProcessamentoImagensService as PIS
+participant ImagemProcessor as IP
+participant TesseractOCRAdapter as OCR
+participant ConsumoRepository as CR
+participant AlertaService as AS
+participant "RegraLimiteMensal\n<<Chain>>" as R1
+participant "RegraVazamento\n<<Chain>>" as R2
+participant AlertaRepository as AR
+participant "NotificadorEmail\n<<Observer>>" as NE
+participant "NotificadorSMS\n<<Observer>>" as NS
+database PostgreSQL as DB
+
+== Processamento Automático (a cada 5 minutos) ==
+
+Scheduler -> PIS: @Scheduled dispara\nprocessarImagensPendentes()
+activate PIS
+
+PIS -> PIS: listarImagensNoDiretorio()
+note right: /imagens_sha/SHA-001_*.png
+
+loop Para cada imagem
+
+    PIS -> IP: processar(path, "SHA-001")
+    activate IP
+    
+    IP -> IP: lerImagem(path)
+    note right: BufferedImage
+    
+    IP -> IP: preprocessarImagem(img)
+    note right
+        1. Binarização
+        2. Aumento de contraste
+    end note
+    
+    IP -> OCR: extrairTexto(img)
+    activate OCR
+    OCR -> OCR: Tesseract.doOCR()
+    OCR --> IP: "Vazão: 35.2 L/min\nVolume: 15234 L\nPressão: 3.1 bar"
+    deactivate OCR
+    
+    IP -> IP: extrairDados(texto)
+    note right
+        Parseia:
+        - vazaoLMin = 35.2
+        - volumeLitros = 15234
+        - pressaoBar = 3.1
+    end note
+    
+    IP -> IP: validarDados(dados)
+    
+    alt Dados válidos
+        IP -> CR: salvar(leitura)
+        activate CR
+        CR -> DB: INSERT INTO leitura_consumo
+        CR --> IP: Leitura salva
+        deactivate CR
+        
+        IP -> PIS: Leitura processada
+        deactivate IP
+        
+        == Verificação de Alertas (Observer Pattern) ==
+        
+        PIS -> AS: verificarLimites(leitura)
+        activate AS
+        
+        AS -> R1: processar(leitura)
+        activate R1
+        R1 -> R1: calcularConsumoMes(SHA-001)
+        R1 -> R1: verificarLimite(consumo, limite)
+        
+        alt Limite ultrapassado (100%)
+            R1 -> R1: gerarAlertaCritico()
+            R1 --> AS: Optional<Alerta>
+            deactivate R1
+            
+            AS -> AR: salvar(alerta)
+            activate AR
+            AR -> DB: INSERT INTO alerta
+            AR --> AS: Alerta salvo
+            deactivate AR
+            
+            == Notificação de Observadores ==
+            
+            AS -> NE: onAlertaGerado(alerta)
+            activate NE
+            NE -> NE: formatarMensagem(alerta)
+            NE -> NE: enviarEmail(cliente.email, mensagem)
+            note right
+                Para: joao@email.com
+                Assunto: Alerta de Consumo Crítico
+                Corpo: Consumo ultrapassou 100% do limite
+            end note
+            NE --> AS: Email enviado
+            deactivate NE
+            
+            AS -> NS: onAlertaGerado(alerta)
+            activate NS
+            NS -> NS: somenteParaCriticos(alerta)
+            NS -> NS: enviarSMS(cliente.telefone, mensagem)
+            note right
+                Para: +55 83 98765-4321
+                Texto: "ALERTA CRÍTICO: Consumo..."
+            end note
+            NS --> AS: SMS enviado
+            deactivate NS
+            
+        else Dentro do limite
+            R1 --> AS: Optional.empty()
+            deactivate R1
+        end
+        
+        deactivate AS
+        
+    else Dados inválidos
+        IP -> IP: moverParaDiretorioErros()
+        IP --> PIS: Erro no processamento
+        deactivate IP
+    end
+    
+end
+
+PIS --> Scheduler: Processamento concluído
+deactivate PIS
+
+== Consulta pelo Admin ==
+
+Admin -> PIS: consultarStatusProcessamento()
+activate PIS
+PIS -> PIS: contarImagensPendentes()
+PIS -> CR: contarProcessadasHoje()
+activate CR
+CR -> DB: SELECT COUNT(*) WHERE DATE = hoje
+CR --> PIS: 142 imagens
+deactivate CR
+PIS --> Admin: StatusProcessamentoDTO
+deactivate PIS
+
+Admin -> AS: listarAlertasAtivos()
+activate AS
+AS -> AR: listarAtivos()
+activate AR
+AR -> DB: SELECT * FROM alerta WHERE status = 'ATIVO'
+AR --> AS: List<Alerta>
+deactivate AR
+AS --> Admin: List<AlertaDTO>
+deactivate AS
+
+@enduml
